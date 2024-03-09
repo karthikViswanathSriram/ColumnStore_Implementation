@@ -10,14 +10,17 @@ import diskmgr.*;
  * deletions are performed.
  */
 
+@SuppressWarnings("unused")
 public class BMPage extends Page implements GlobalConst {
 
-    public static final int DPFIXED = 2 * 2 + 3 * 4;
-    public static final int MAX_BITS = (MAX_SPACE - DPFIXED) * 8;
+    // This is the size of the page header of a BMPage (in bytes)
+    public static final int DPHDR = 2 * 2 + 3 * 4;
+    // This is the total number of bits available in a BMPage
+    public static final int NUM_POSITIONS_AVAILABLE_IN_PAGE = (MAX_SPACE - DPHDR) * 8;
 
     // Removed TYPE, SLOT_CNT, USED_PTR from page metadata as they are used in heap
     // pages only.
-    public static final int BIT_COUNTER = 0;
+    public static final int COUNTER = 0;
     public static final int FREE_SPACE = 2;
     public static final int PREV_PAGE = 4;
     public static final int NEXT_PAGE = 8;
@@ -31,12 +34,12 @@ public class BMPage extends Page implements GlobalConst {
      */
 
     /**
-     * number of bytes used
+     * number of bits used
      */
-    private short bitCounter;
+    private short counter;
 
     /**
-     * number of bytes free in data[]
+     * number of bits free in data[]
      */
     private short freeSpace;
 
@@ -98,10 +101,10 @@ public class BMPage extends Page implements GlobalConst {
             throws IOException {
         data = apage.getpage();
 
-        bitCounter = (short) 0;
-        Convert.setShortValue(bitCounter, BIT_COUNTER, data);
+        counter = (short) 0;
+        Convert.setShortValue(counter, COUNTER, data);
 
-        freeSpace = (short) MAX_BITS; // amount of space available
+        freeSpace = (short) NUM_POSITIONS_AVAILABLE_IN_PAGE; // amount of space available
         Convert.setShortValue(freeSpace, FREE_SPACE, data);
 
         curPage.pid = pageNo.pid;
@@ -112,18 +115,10 @@ public class BMPage extends Page implements GlobalConst {
         Convert.setIntValue(nextPage.pid, NEXT_PAGE, data);
 
         // Setting empty bytes to 0
-        for (Integer i = DPFIXED; i < MAX_SPACE; i++) {
+        for (Integer i = DPHDR; i < MAX_SPACE; i++) {
             Convert.setByteValue((byte) 0, i, data);
         }
 
-    }
-
-    /**
-     * @return byte array
-     */
-
-    public byte[] getBMpageArray() {
-        return data;
     }
 
     /**
@@ -135,7 +130,7 @@ public class BMPage extends Page implements GlobalConst {
             throws IOException {
         int i;
 
-        bitCounter = Convert.getShortValue(BIT_COUNTER, data);
+        counter = Convert.getShortValue(COUNTER, data);
         freeSpace = Convert.getShortValue(FREE_SPACE, data);
         curPage.pid = Convert.getIntValue(CUR_PAGE, data);
         nextPage.pid = Convert.getIntValue(NEXT_PAGE, data);
@@ -144,9 +139,9 @@ public class BMPage extends Page implements GlobalConst {
         System.out.println("curPage= " + curPage.pid);
         System.out.println("nextPage= " + nextPage.pid);
         System.out.println("freeSpace= " + freeSpace);
-        System.out.println("byteCnt= " + bitCounter);
+        System.out.println("byteCnt= " + counter);
 
-        for (i = DPFIXED; i < DPFIXED + bitCounter; i++) {
+        for (i = DPHDR; i < DPHDR + counter; i++) {
             Byte val = Convert.getByteValue(i, data);
             System.out.print("Position: " + i + "Value: " + val);
 
@@ -221,25 +216,25 @@ public class BMPage extends Page implements GlobalConst {
     }
 
     /**
-     * @return bitCounter used in this page
+     * @return counter used in this page
      * @exception IOException I/O errors
      */
-    public short getbitCounter()
+    public short getcounter()
             throws IOException {
-        bitCounter = Convert.getShortValue(BIT_COUNTER, data);
-        return bitCounter;
+        counter = Convert.getShortValue(COUNTER, data);
+        return counter;
     }
 
     /**
-     * sets value of bitCounter to byteCtr
+     * sets value of counter to byteCtr
      * 
      * @param byteCtr number of bytes used in this page
      * @exception IOException I/O errors
      */
-    public void setbitCounter(short byteCtr)
+    public void setcounter(short byteCtr)
             throws IOException {
-        bitCounter = byteCtr;
-        Convert.setShortValue(bitCounter, BIT_COUNTER, data);
+        counter = byteCtr;
+        Convert.setShortValue(counter, COUNTER, data);
     }
 
     /**
@@ -248,8 +243,7 @@ public class BMPage extends Page implements GlobalConst {
      * @return the amount of available space on the page
      * @exception IOException I/O errors
      */
-    public int available_space()
-            throws IOException {
+    public int available_space() throws IOException {
         freeSpace = Convert.getShortValue(FREE_SPACE, data);
         return freeSpace;
     }
@@ -260,23 +254,34 @@ public class BMPage extends Page implements GlobalConst {
      * @return true if the BMPage is has no data in it, false otherwise
      * @exception IOException I/O errors
      */
-    public boolean empty()
-            throws IOException {
+    public boolean empty() throws IOException {
 
-        Short byteCtr = getbitCounter();
-        if (byteCtr == 0) {
+        int free_space = available_space();
+        if (free_space == (MAX_SPACE - DPHDR) * 8) {
             return true;
         }
         return false;
     }
 
-    public void updateCounter(int value) throws IOException {
-        bitCounter = Convert.getShortValue(BIT_COUNTER, data);
-        bitCounter += value;
-        Convert.setShortValue(bitCounter, BIT_COUNTER, data);
-        freeSpace = Convert.getShortValue(FREE_SPACE, data);
-        freeSpace -= value;
-        Convert.setShortValue(freeSpace, FREE_SPACE, data);
+    public void updateCounter(Short value) throws IOException {
+        Convert.setShortValue(value, COUNTER, data);
+        Convert.setShortValue((short) (NUM_POSITIONS_AVAILABLE_IN_PAGE - value), FREE_SPACE, data);
+    }
+
+    /**
+     * Returns the byte array of the BMPage
+     * 
+     * @return byte array
+     * @throws IOException
+     */
+
+    public byte[] getBMpageArray() throws Exception {
+        int dataLength = NUM_POSITIONS_AVAILABLE_IN_PAGE / 8;
+        byte[] bitMapPageData = new byte[dataLength];
+        for (int i = 0; i < dataLength; i++) {
+            bitMapPageData[i] = Convert.getByteValue(DPHDR + i, data);
+        }
+        return bitMapPageData;
     }
 
     /**
@@ -287,7 +292,7 @@ public class BMPage extends Page implements GlobalConst {
     public void writeBMPageArray(Byte[] byteArray) throws IOException {
 
         for (int i = 0; i < byteArray.length; i++) {
-            Convert.setByteValue(byteArray[i], i, data);
+            Convert.setByteValue(byteArray[i], DPHDR + i, data);
         }
 
     }
