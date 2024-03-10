@@ -219,7 +219,7 @@ public class BMPage extends Page implements GlobalConst {
      * @return counter used in this page
      * @exception IOException I/O errors
      */
-    public short getcounter()
+    public short getCounter()
             throws IOException {
         counter = Convert.getShortValue(COUNTER, data);
         return counter;
@@ -231,7 +231,7 @@ public class BMPage extends Page implements GlobalConst {
      * @param byteCtr number of bytes used in this page
      * @exception IOException I/O errors
      */
-    public void setcounter(short byteCtr)
+    public void setCounter(short byteCtr)
             throws IOException {
         counter = byteCtr;
         Convert.setShortValue(counter, COUNTER, data);
@@ -289,7 +289,7 @@ public class BMPage extends Page implements GlobalConst {
      * 
      * @exception IOException I/O errors
      */
-    public void writeBMPageArray(Byte[] byteArray) throws IOException {
+    public void writeBMPageArray(byte[] byteArray) throws IOException {
 
         for (int i = 0; i < byteArray.length; i++) {
             Convert.setByteValue(byteArray[i], DPHDR + i, data);
