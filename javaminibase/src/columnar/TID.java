@@ -57,7 +57,7 @@ public class TID {
       Convert.setIntValue ( numRIDs, offset, array);
       Convert.setIntValue ( position, offset+4, array);
       for (int i=0;i<recordIDs.length;i++){
-        recordIDs[i].writeToByteArray(array, offset+8);
+        recordIDs[i].writeToByteArray(array, offset+8 + i*8) ;
         }
     }
 
