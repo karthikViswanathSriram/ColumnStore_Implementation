@@ -1,6 +1,6 @@
-package phase-2;
+package columnar;
 import global.*;
-import io.*;
+import java.io.*;
 
 public class TID {
     int numRIDs;
@@ -65,10 +65,11 @@ public class TID {
         this.position=position;
     }
 
-    void setRID(int column, RID recordID){
-      for (int i=0;i<recordIDs.length;i++){
-        if (recordIDs[i])
-      }
+    void setRID(int column, RID recordID) throws Exception{
+        if (column<numRIDs)    
+            this.recordIDs[column] = recordID;
+        else
+            throw new Exception("column passed exceeds number of columns in database");
     }
 
 }
