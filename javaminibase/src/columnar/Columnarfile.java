@@ -426,6 +426,7 @@ public class Columnarfile {
 
     public int get_numcols(){return numColumns;}
     public Heapfile get_HF(int column){return HF[column];}
+    public AttrType[] get_AttrTypes(){return type;}
 
     public int get_attr_size(int column){
         switch (type[column].attrType) {
