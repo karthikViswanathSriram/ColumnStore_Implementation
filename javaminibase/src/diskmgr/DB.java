@@ -3,10 +3,7 @@
 package diskmgr;
 
 import java.io.*;
-import bufmgr.*;
 import global.*;
-/******ME************/
-import diskmgr.*;
 /******************/
 public class DB implements GlobalConst {
 
@@ -728,8 +725,8 @@ public class DB implements GlobalConst {
       
     }
   
-  private RandomAccessFile fp;
-  private int num_pages;
+  RandomAccessFile fp;
+  public int num_pages;
   private String name;
   
   
