@@ -122,7 +122,7 @@ public class BMFile implements GlobalConst {
         attrType = bmHeaderPage.getAttrType();
 
         /*
-         * Check on lalits part and change this. And where are we converting string to
+         * Check on lalit's part and change this. And where are we converting string to
          * integer
          */
         if (attrType.attrType == AttrType.attrString) {
