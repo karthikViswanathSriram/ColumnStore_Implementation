@@ -171,27 +171,28 @@ public class Columnarfile {
 
         // Mark the deleted flag (even if it doesn't get all the way done).
         _file_deleted = true;
-        numColumns = 0;
         for (int column = 0; column < type.length; column++) {
             type[column].attrType = AttrType.attrNull;
         }
         type = null;
-        for (int column = 0; column < numColumns; column++) {
-            HF[column].deleteFile();
+        for (int column=0;column<numColumns;column++){
+                HF[column].deleteFile();   
         }
-
-        Iterator<Map.Entry<String, BTreeFile>> iterator = BTMap.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<String, BTreeFile> entry = iterator.next();
-            BTreeFile btf = entry.getValue();
-            btf.destroyFile();
+        Iterator <Map.Entry<String,BTreeFile>> iterator = BTMap.entrySet().iterator();
+        while(iterator.hasNext()){
+            Map.Entry<String,BTreeFile> entry= iterator.next();
+            BTreeFile btf= entry.getValue();
+            if(btf != null)
+                btf.destroyFile();
         }
+        numColumns = 0;
 
-        Iterator<Map.Entry<String, BitMapFile>> iterator2 = BMMap.entrySet().iterator();
-        while (iterator2.hasNext()) {
-            Map.Entry<String, BitMapFile> entry = iterator2.next();
-            BitMapFile bmf = entry.getValue();
-            bmf.destroyBitMapFile();
+        Iterator <Map.Entry<String,BitMapFile>> iterator2 = BMMap.entrySet().iterator();
+        while(iterator2.hasNext()){
+            Map.Entry<String,BitMapFile> entry= iterator2.next();
+            BitMapFile bmf= entry.getValue();
+            if(bmf != null)
+                bmf.destroyBitMapFile();
         }
     }
 
