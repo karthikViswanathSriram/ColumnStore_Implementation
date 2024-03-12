@@ -387,9 +387,9 @@ public class Columnarfile {
 
     boolean createBTreeIndex(int column) throws Exception {
         int keysize = 0;
-        String indexName = CFname + ".Column" + column + ".BTFile";
+        String indexName = generateBTName(column);
         keysize = get_attr_size(column);
-        BTreeFile bTreeFile = new BTreeFile(indexName, type[column].attrType, keysize, 0);
+        BTreeFile bTreeFile = new BTreeFile(indexName, type[column].attrType, keysize, DeleteFashion.FULL_DELETE);
         Scan colScan = openColumnScan(column);
         RID rid = new RID();
         Tuple tpl;
