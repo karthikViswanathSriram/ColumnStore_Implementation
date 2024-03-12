@@ -474,14 +474,18 @@ public class Columnarfile {
         return type;
     }
 
+    public AttrType getAttrtypeforcolumn(int column) {
+        return type[column];
+    }
+
     public String get_ColumnarFile_name() {
         return CFname;
     }
 
-    public int get_attr_size(int column) {
+    public short get_attr_size(int column) {
         switch (type[column].attrType) {
             case 0:
-                return strattrsize;
+                return (short) strattrsize;
             case 1:
             case 2:
                 return 4;
@@ -528,6 +532,17 @@ public class Columnarfile {
             return false;
         }
         return true;
+    }
+
+    public String[] getAvailableBM(int columnNo) {
+        List<String> bmName = new ArrayList<>();
+        String prefix = "BM" + "." + CFname + "." + columnNo + ".";
+        for (String s : BMMap.keySet()) {
+            if (s.substring(0, prefix.length()).equals(prefix)) {
+                bmName.add(s);
+            }
+        }
+        return bmName.toArray(new String[bmName.size()]);
     }
 
 }
