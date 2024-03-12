@@ -159,12 +159,12 @@ public class BitMapFile implements GlobalConst {
     }
 
     public boolean Insert(int position) throws Exception {
-        setBitAtPosition(false, position);
+        setBitAtPosition(true, position);
         return true;
     }
 
     public boolean Delete(int position) throws Exception {
-        setBitAtPosition(true, position);
+        setBitAtPosition(false, position);
         return true;
     }
 
