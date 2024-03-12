@@ -40,7 +40,7 @@ public class TupleScan implements GlobalConst {
         }
     }
 
-    Tuple getNext(TID tid) throws Exception {
+    public Tuple getNext(TID tid) throws Exception {
         Tuple tpl = new Tuple();
         tpl.setHdr((short) ncols, attrTypes, str_attr_sizes);
         RID[] rids = new RID[ncols];
@@ -65,7 +65,7 @@ public class TupleScan implements GlobalConst {
         return tpl;
     }
 
-    boolean position(TID tid) throws InvalidTupleSizeException, IOException {
+    public boolean position(TID tid) throws InvalidTupleSizeException, IOException {
         for (int i = 0; i < tid.numRIDs; i++) {
             boolean flag = sc[i].position(tid.recordIDs[i]);
             if (!flag)
