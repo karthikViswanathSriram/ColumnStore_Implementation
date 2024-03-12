@@ -206,6 +206,7 @@ public class Columnarfile {
         for (int column = 0; column < tuple_fldcount; column++) {
             tuple_fldoffsets[column] = Convert.getShortValue(2 + 2 * column, tuplePtr);
         }
+        int pos = 0;
         for (int column = 0; column < type.length; column++) {
             byte[] temp = null;
             if (type[column].attrType == AttrType.attrInteger) {
@@ -235,7 +236,39 @@ public class Columnarfile {
             } else {
                 tid.recordIDs[column] = HF[column].insertRecord(temp);
             }
+            
+            // Update index files
+            String btIndexname = getBTName(column);
+            ValueClass val type[column].attrType == AttrType.attrString ? new StringValue(Convert.getStrValue(0, temp, strattrsize) : new IntegerValue(Convert.getIntValue(0, temp));
+            String bmIndexname = getBMName(column, val);
+            if (BTMap != null && BTMap.containsKey(btIndexname)) {
+                pos = getColumn(column).positionOfRecord(tid.recordIDs[column]);
+                KeyClass key = null;
+                switch (type[column].attrType) {
+                    case 0:
+                    case 3:
+                        String s = Convert.getStrValue(0, temp, strattrsize);
+                        key = new StringKey(s);
+                        break;
+                    case 1:
+                    case 2:
+                        Integer i = Convert.getIntValue(0, temp);
+                        key = new IntegerKey(i);
+                        break;
+                    default:
+                        break;
+                }
+                getBTIndex(btIndexname).insert(key, pos);
+            }
+            if (BMMap != null && BMMap.containsKey(bmIndexname)) {
+                pos = getColumn(column).positionOfRecord(tid.recordIDs[column]);
+                getBMIndex(bmIndexname).insert(pos);
+            }
+            if(i+1 == numColumns){
+                pos = getColumn(1).positionOfRecord(rids[1]);
+            }
         }
+        tid.position = pos;
         return tid;
         // need to figure out what to do with position variable- for BMmap and BT index
     }
