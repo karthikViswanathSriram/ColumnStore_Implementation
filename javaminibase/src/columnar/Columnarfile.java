@@ -378,89 +378,95 @@ public class Columnarfile {
         return true;
     }
 
+    String generateBTName(int column){
+        return "BT."+ CFname + "." + column;
+    }
+
     boolean createBTreeIndex(int column) throws Exception {
-        int ctype = type[column].attrType;
         int keysize = 0;
-        Object key;
         String indexName = CFname + ".Column" + column + ".BTFile";
-        if (type[column].attrType == 1) {
-            keysize = 4;
-        } else if (type[column].attrType == 2) {
-            keysize = 4;
-        } else if (type[column].attrType == 3) {
-            keysize = 2;
-        } else if (type[column].attrType == 0) {
-            Scan scan = openColumnScan(column);
-            // need to complete
-        }
+        keysize = get_attr_size(column);
         BTreeFile bTreeFile = new BTreeFile(indexName, type[column].attrType, keysize, 0);
         Scan colScan = openColumnScan(column);
         RID rid = new RID();
         Tuple tpl;
+        KeyClass key=null;
+        Object keyvalue;
         while (true) {
             tpl = colScan.getNext(rid);
             if (tpl == null)
                 break;
-
-        }
-        bTreeFile.insert(null, null);
-        BTfiles[column] = indexName;
-        return true;
-    }
-
-    String generateBMName(int columnNo, ValueClass value) {
-        return "BM" + "." + get_ColumnarFile_name() + "." + columnNo + "." + value.toString();
-    }
-
-    boolean createBitMapIndex(int columnNo, ValueClass value) throws Exception {
-
-        short[] targetedCols = new short[1];
-        targetedCols[0] = (short) columnNo;
-
-        FldSpec[] projection = new FldSpec[1];
-        projection[0] = new FldSpec(new RelSpec(RelSpec.outer), 1);
-
-        ColumnarColumnScan columnScan = new ColumnarColumnScan(get_ColumnarFile_name(), columnNo,
-                projection,
-                targetedCols,
-                null, null);
-
-        String indexName = generateBMName(columnNo, value);
-        BitMapFile bitMapFile = new BitMapFile(indexName, this, columnNo, value);
-        Tuple tuple;
-        int position = 0;
-        while (true) {
-            tuple = columnScan.get_next();
-            if (tuple == null) {
-                break;
-            }
-
-            ValueClass v;
-            switch (type[columnNo].attrType) {
+            switch (type[column].attrType) {
                 case 0:
-                    v = new IntegerValue(tuple.getIntFld(1));
-                    break;
                 case 3:
-                    v = new StringValue(tuple.getStrFld(1));
+                    key = new StringKey(getval(column, tpl).toString());
                     break;
+                case 1:
+                case 2:
+                    key = new IntegerKey((int)getval(column, tpl));
                 default:
-                    v = new StringValue(tuple.getStrFld(1));
                     break;
             }
-            if (v.toString().equals(value.toString())) {
-                bitMapFile.Insert(position);
-            } else {
-                bitMapFile.Delete(position);
-            }
-            position++;
+            bTreeFile.insert(key,rid);
         }
-        columnScan.close();
-        bitMapFile.close();
-
-        addIndexToColumnar(1, indexName);
-
+        colScan.closescan();
+        addIndexToColumnar(0, indexName);
         return true;
     }
+
+        String generateBMName(int columnNo, ValueClass value) {
+            return "BM" + "." + get_ColumnarFile_name() + "." + columnNo + "." + value.toString();
+        }
+
+        boolean createBitMapIndex(int columnNo, ValueClass value) throws Exception {
+
+            short[] targetedCols = new short[1];
+            targetedCols[0] = (short) columnNo;
+
+            FldSpec[] projection = new FldSpec[1];
+            projection[0] = new FldSpec(new RelSpec(RelSpec.outer), 1);
+
+            ColumnarColumnScan columnScan = new ColumnarColumnScan(get_ColumnarFile_name(), columnNo,
+                    projection,
+                    targetedCols,
+                    null, null);
+
+            String indexName = generateBMName(columnNo, value);
+            BitMapFile bitMapFile = new BitMapFile(indexName, this, columnNo, value);
+            Tuple tuple;
+            int position = 0;
+            while (true) {
+                tuple = columnScan.get_next();
+                if (tuple == null) {
+                    break;
+                }
+
+                ValueClass v;
+                switch (type[columnNo].attrType) {
+                    case 0:
+                        v = new IntegerValue(tuple.getIntFld(1));
+                        break;
+                    case 3:
+                        v = new StringValue(tuple.getStrFld(1));
+                        break;
+                    default:
+                        v = new StringValue(tuple.getStrFld(1));
+                        break;
+                }
+                if (v.toString().equals(value.toString())) {
+                    bitMapFile.Insert(position);
+                } else {
+                    bitMapFile.Delete(position);
+                }
+                position++;
+            }
+            columnScan.close();
+            bitMapFile.close();
+
+            addIndexToColumnar(1, indexName);
+
+            return true;
+        }
 
     public int get_numcols() {
         return numColumns;
@@ -489,6 +495,21 @@ public class Columnarfile {
                 return 2;
             default:
                 return 0;
+        }
+    }
+
+    public Object getval(int column, Tuple tpl) throws FieldNumberOutOfBoundException, IOException{
+        switch (type[column].attrType) {
+            case 0:
+                return tpl.getStrFld(1);
+            case 1:
+                return tpl.getIntFld(1);
+            case 2:
+                return tpl.getFloFld(1);
+            case 3:
+                return tpl.getCharFld(1);
+            default:
+                return null;
         }
     }
 
