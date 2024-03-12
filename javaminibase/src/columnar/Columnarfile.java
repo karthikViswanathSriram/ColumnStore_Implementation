@@ -309,8 +309,10 @@ public class Columnarfile {
     }
 
     // --------implement this function--------------
-    TupleScan openTupleScan() {
-        return null;
+    TupleScan openTupleScan() throws Exception{
+        
+        TupleScan scanResult = new TupleScan(this);
+        return scanResult;
     }
 
     Scan openColumnScan(int columnNo) throws Exception {
