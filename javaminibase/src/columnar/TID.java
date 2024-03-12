@@ -65,6 +65,11 @@ public class TID {
         this.position = position;
     }
 
+    int getPosition()
+    {
+        return this.position;
+    }
+
     void setRID(int column, RID recordID) throws Exception {
         if (column < numRIDs)
             this.recordIDs[column] = recordID;

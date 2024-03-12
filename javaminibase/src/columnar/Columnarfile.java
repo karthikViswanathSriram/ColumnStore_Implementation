@@ -20,6 +20,7 @@ import iterator.FileScan;
 import iterator.FldSpec;
 import iterator.RelSpec;
 import iterator.Sort;
+import iterator.SortException;
 import btree.*;
 
 import java.util.*;
@@ -424,19 +425,20 @@ public class Columnarfile {
      * @param position
      * @return
      */
-    public boolean markTupleDeleted(int position) {
+    public boolean markTupleDeleted(TID tid) {
         String name = generateDeletedFileName();
         try {
             Heapfile f = new Heapfile(name);
-            AttrType types = new AttrType(AttrType.attrInteger);
+            AttrType types[] = new AttrType[1];
+            types[0] = new AttrType(AttrType.attrInteger);
             Tuple t = new Tuple(10); // I think 8 is enough? 2 + 2 + 4?
-            t.setHdr((short) 1, &types, null);
-            t.setIntFld(1, position);
+            t.setHdr((short) 1, types, null);
+            t.setIntFld(1, tid.position);
             f.insertRecord(t.getTupleByteArray());
 
             // update Index files
             for (int column = 0; column < numColumns; column++) {
-                Tuple tuple = getColumn(column).getRecord(position);
+                Tuple tuple = getColumn(column).getRecord(tid.recordIDs[column]);
                 ValueClass valueClass;
                 KeyClass keyClass;
                 valueClass = type[column].attrType == AttrType.attrString
@@ -450,11 +452,11 @@ public class Columnarfile {
                 String bitMapFileName = generateBMName(column, valueClass);
                 if (BTMap.containsKey(bTreeFileName)) {
                     BTreeFile bTreeFile = getBTIndex(bTreeFileName);
-                    bTreeFile.Delete(keyClass, position);
+                    bTreeFile.Delete(keyClass, tid.position);
                 }
                 if (BMMap.containsKey(bitMapFileName)) {
                     BitMapFile bitMapFile = getBMIndex(bitMapFileName);
-                    bitMapFile.Delete(position);
+                    bitMapFile.Delete(tid.position);
                 }
             }
 
@@ -462,6 +464,7 @@ public class Columnarfile {
             e.printStackTrace();
             return false;
         }
+        return true;
     }
 
     /**
@@ -492,9 +495,11 @@ public class Columnarfile {
         }
 
         try {
-            AttrType types = new AttrType(AttrType.attrInteger);
-            FldSpec projlist = new FldSpec(new RelSpec(RelSpec.outer), 1);
-            final FileScan fs = new FileScan(generateDeletedFileName(), &types, null, (short) 1, 1, projlist, null);
+            AttrType types[] = new AttrType[1];
+            types[0] = new AttrType(AttrType.attrInteger);
+            FldSpec projlist[] = new FldSpec[1];
+            projlist[0] = new FldSpec(new RelSpec(RelSpec.outer), 1);
+            final FileScan fs = new FileScan(generateDeletedFileName(), types, null, (short) 1, 1, projlist, null);
             deletedTuples = new Sort(types, (short) 1, null, fs, 1, new TupleOrder(TupleOrder.Descending), 4, 10);
 
         } catch (Exception e) {
