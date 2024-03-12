@@ -430,7 +430,7 @@ public class Columnarfile {
             Heapfile f = new Heapfile(name);
             AttrType types = new AttrType(AttrType.attrInteger);
             Tuple t = new Tuple(10); // I think 8 is enough? 2 + 2 + 4?
-            t.setHdr((short) 1, types, null);
+            t.setHdr((short) 1, &types, null);
             t.setIntFld(1, position);
             f.insertRecord(t.getTupleByteArray());
 
@@ -494,7 +494,7 @@ public class Columnarfile {
         try {
             AttrType types = new AttrType(AttrType.attrInteger);
             FldSpec projlist = new FldSpec(new RelSpec(RelSpec.outer), 1);
-            final FileScan fs = new FileScan(generateDeletedFileName(), types, null, (short) 1, 1, projlist, null);
+            final FileScan fs = new FileScan(generateDeletedFileName(), &types, null, (short) 1, 1, projlist, null);
             deletedTuples = new Sort(types, (short) 1, null, fs, 1, new TupleOrder(TupleOrder.Descending), 4, 10);
 
         } catch (Exception e) {
