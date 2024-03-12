@@ -188,7 +188,7 @@ public class BitMapFile implements GlobalConst {
             freePage(bmHeaderPageId);
             /* Delete the file entry */
             try {
-                SystemDefs.JavabaseDB.delete_file_entry(columnarFileName);
+                delete_file_entry(columnarFileName);
             } catch (Exception e) {
                 e.printStackTrace();
                 throw new DeleteFileEntryException(e, "");
@@ -202,6 +202,13 @@ public class BitMapFile implements GlobalConst {
         // Close the BitMapFile
         if (bmHeaderPage != null) {
             SystemDefs.JavabaseBM.unpinPage(bmHeaderPageId, true);
+            bmHeaderPage = null;
+        }
+    }
+
+    public void scanClose() throws Exception {
+        if (bmHeaderPage != null) {
+            SystemDefs.JavabaseBM.unpinPage(bmHeaderPageId, false);
             bmHeaderPage = null;
         }
     }
@@ -220,9 +227,7 @@ public class BitMapFile implements GlobalConst {
         }
         if (bmHeaderPage.get_rootId().pid != INVALID_PAGE) {
             int pc;
-            // Remove these comments
-            // int pageCounter = 1;
-            // pc is pageCounter
+
             for (pc = 1; position >= BMPage.NUM_POSITIONS_AVAILABLE_IN_PAGE; pc++) {
                 // pageCounter++;
                 position -= BMPage.NUM_POSITIONS_AVAILABLE_IN_PAGE;
@@ -300,6 +305,16 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    private void delete_file_entry(String filename)
+            throws DeleteFileEntryException {
+        try {
+            SystemDefs.JavabaseDB.delete_file_entry(filename);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new DeleteFileEntryException(e, "");
+        }
+    }
+
     private Page pinPage(PageId pageno)
             throws PinPageException {
         try {
@@ -358,4 +373,12 @@ public class BitMapFile implements GlobalConst {
 
     }
 
+    /**
+     *
+     * @return scan object
+     * @throws Exception
+     */
+    public BitmapFileScan new_scan() throws Exception {
+        return new BitmapFileScan(this);
+    }
 }

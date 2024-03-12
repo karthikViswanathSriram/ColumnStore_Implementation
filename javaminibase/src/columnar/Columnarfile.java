@@ -1,7 +1,6 @@
 package columnar;
 
 import java.io.IOException;
-import java.lang.*;
 import global.*;
 import heap.FieldNumberOutOfBoundException;
 import heap.FileAlreadyDeletedException;
@@ -29,6 +28,9 @@ import btree.FreePageException;
 import btree.IteratorException;
 import btree.PinPageException;
 import btree.UnpinPageException;
+
+import IntegerValue;
+import StringValue;
 
 public class Columnarfile {
     private int numColumns;
@@ -446,9 +448,10 @@ public class Columnarfile {
 
             switch (type[columnNo].attrType) {
                 case 0:
+                    ValueClass valueClass = new IntegerValue(tuple.getIntFld(1));
+                    break;
                 case 3:
-                    ValueClass valueClass = StringValue(tuple.getTupleByteArray(), type[columnNo],
-                            get_attr_size(columnNo));
+                    ValueClass valueClass = new StringValue(tuple.getStrFld(1));
                     break;
 
                 default:
