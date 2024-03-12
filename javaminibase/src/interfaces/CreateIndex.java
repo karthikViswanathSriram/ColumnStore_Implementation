@@ -34,7 +34,7 @@ public class CreateIndex {
         int colno = cf.getColumnNumberFromColName(columnName);
 
         if (indexType.equals("BITMAP")) {
-            cf.createAllBitMapIndexForColumn(colno);
+            cf.createBMIndexForAllValuesInColumn(colno);
         } else {
             cf.createBTreeIndex(colno);
         }

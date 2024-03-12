@@ -813,4 +813,69 @@ public class Columnarfile {
 
         return BMMap.get(indexName);
     }
+
+
+    public boolean createBMIndexForAllValuesInColumn(int columnNo) throws Exception{
+        short[] targetedCols = new short[1];
+        targetedCols[0] = (short) columnNo;
+
+        FldSpec[] projection = new FldSpec[1];
+        projection[0] = new FldSpec(new RelSpec(RelSpec.outer), 1);
+        ColumnarColumnScan columnScan = new ColumnarColumnScan(get_ColumnarFile_name(), columnNo,
+                projection,
+                targetedCols,
+                null, null);
+
+        RID rid = new RID();
+        Tuple tuple;
+        int position = 0;
+        Set<BitMapFile> bitMapFiles = new HashSet<>();
+        while (true) {
+            tuple = columnScan.get_next();
+            if (tuple == null) {
+                break;
+            }
+
+            ValueClass v;
+            switch (type[columnNo].attrType) {
+                case 0:
+                    v = new IntegerValue(tuple.getIntFld(1));
+                    break;
+                case 3:
+                    v = new StringValue(tuple.getStrFld(1));
+                    break;
+                default:
+                    v = new StringValue(tuple.getStrFld(1));
+                    break;
+            }
+
+            BitMapFile bitMapFile;
+            String bitMapFileName = generateBMName(columnNo, v);
+            if (!BMMap.containsKey(bitMapFileName)) {
+                bitMapFile = new BitMapFile(bitMapFileName, this, columnNo, v);
+                addIndexToColumnar(1, bitMapFileName);
+                BMMap.put(bitMapFileName, bitMapFile);
+            } else {
+                bitMapFile = getBMIndex(bitMapFileName);
+            }
+            bitMapFiles.add(bitMapFile);
+
+            for (BitMapFile existingBitMapFile : bitMapFiles) {
+                if (existingBitMapFile.getHeaderPage().getValue().equals(v.toString())) {
+                    existingBitMapFile.Insert(position);
+                } else {
+                    existingBitMapFile.Delete(position);
+                }
+            }
+
+            position++;
+        }
+        columnScan.close();
+        for (BitMapFile bitMapFile : bitMapFiles) {
+            bitMapFile.close();
+        }
+
+        return true;
+    }
+    
 }
