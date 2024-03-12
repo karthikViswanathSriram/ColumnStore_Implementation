@@ -27,7 +27,7 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst {
         try {
 
             columnarfile = cf;
-            indName = columnarfile.getBTName(columnNo);
+            indName = columnarfile.generateBTName(columnNo);
         } catch (Exception e) {
             e.printStackTrace();
             return;
