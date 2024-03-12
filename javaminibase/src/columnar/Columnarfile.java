@@ -18,6 +18,7 @@ import heap.Tuple;
 import iterator.ColumnarColumnScan;
 import iterator.FldSpec;
 import iterator.RelSpec;
+import btree.*;
 
 import java.util.*;
 
