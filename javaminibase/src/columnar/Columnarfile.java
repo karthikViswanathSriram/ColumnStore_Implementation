@@ -239,7 +239,9 @@ public class Columnarfile {
             
             // Update index files
             String btIndexname = getBTName(column);
-            ValueClass val type[column].attrType == AttrType.attrString ? new StringValue(Convert.getStrValue(0, temp, strattrsize) : new IntegerValue(Convert.getIntValue(0, temp));
+            ValueClass val = type[column].attrType == AttrType.attrString ? 
+                new StringValue(Convert.getStrValue(0, temp, strattrsize) : 
+                new IntegerValue(Convert.getIntValue(0, temp));
             String bmIndexname = getBMName(column, val);
             if (BTMap != null && BTMap.containsKey(btIndexname)) {
                 pos = getColumn(column).positionOfRecord(tid.recordIDs[column]);
@@ -421,11 +423,130 @@ public class Columnarfile {
         return true;
     }
 
+    /**
+     * Marks all records at position as deleted. Scan skips over these records
+     *
+     * @param position
+     * @return
+    */
+    public boolean markTupleDeleted(int position) {
+        String name = generateDeletedFileName();
+        try {
+            Heapfile f = new Heapfile(name);
+            AttrType types = new AttrType(AttrType.attrInteger);
+            Tuple t = new Tuple(10); // I think 8 is enough? 2 + 2 + 4?
+            t.setHdr((short) 1, types, null);
+            t.setIntFld(1, position);
+            f.insertRecord(t.getTupleByteArray());
+
+            // update Index files
+            for (int column = 0; column < numColumns; column++) {
+                Tuple tuple = getColumn(column).getRecord(position);
+                ValueClass valueClass;
+                KeyClass keyClass;
+                valueClass = type[column].attrType == AttrType.attrString ? 
+                    new StringValue(Convert.getStrValue(0, tuple, strattrsize) : 
+                    new IntegerValue(Convert.getIntValue(0, tuple));
+                keyClass = type[column].attrType == AttrType.attrString ? 
+                    new StringKey(Convert.getStrValue(0, tuple, strattrsize) : 
+                    new IntegerKey(Convert.getIntValue(0, tuple));
+
+                String bTreeFileName = getBTName(column);
+                String bitMapFileName = getBMName(column, valueClass);
+                if (BTMap.containsKey(bTreeFileName)) {
+                    BTreeFile bTreeFile = getBTIndex(bTreeFileName);
+                    bTreeFile.Delete(keyClass, position);
+                }
+                if (BMMap.containsKey(bitMapFileName)) {
+                    BitMapFile bitMapFile = getBMIndex(bitMapFileName);
+                    bitMapFile.delete(position);
+                }
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Purges all tuples marked for deletion. Removes keys/positions from indexes too
+     *
+     * @return
+     * @throws HFDiskMgrException
+     * @throws InvalidTupleSizeException
+     * @throws IOException
+     * @throws InvalidSlotNumberException
+     * @throws FileAlreadyDeletedException
+     * @throws HFBufMgrException
+     * @throws SortException
+    */
+    public boolean purgeAllDeletedTuples() throws HFDiskMgrException, InvalidTupleSizeException, IOException, InvalidSlotNumberException, FileAlreadyDeletedException, HFBufMgrException, SortException {
+        Sort deletedTuples = null;
+        RID rid;
+        Heapfile f = null;
+        int pos_marked;
+        try {
+            f = new Heapfile(generateDeletedFileName());
+        } catch (Exception e) {
+            System.err.println(" Could not open heapfile");
+            e.printStackTrace();
+            return false;
+        }
+
+        try {
+            AttrType types = new AttrType(AttrType.attrInteger);
+            FldSpec projlist = new FldSpec(new RelSpec(RelSpec.outer), 1);
+            FileScan fs = new FileScan(generateDeletedFileName(), types, null, (short) 1, 1, projlist, null);
+            deletedTuples = new Sort(types, (short) 1, null, fs, 1, new TupleOrder(TupleOrder.Descending), 4, 10);
+
+        } catch (Exception e) {
+            System.err.println("*** Error opening scan\n");
+            e.printStackTrace();
+            return false;
+        }
+        
+
+        int i = 0;
+        Tuple tuple;
+        while (true) {
+            try {
+                rid = new RID();
+                tuple = deletedTuples.get_next();
+                if (tuple == null) {
+                    deletedTuples.close();
+                    break;
+                }
+                pos_marked = Convert.getIntValue(6, tuple.getTupleByteArray());
+                for (int column = 0; column < numColumns; column++) {
+                    rid = getColumn(column).recordAtPosition(pos_marked);
+                    getColumn(column).deleteRecord(rid);
+
+                    for (String fileName : BMMap.keySet()) {
+                        int columnNo = Integer.parseInt(fileName.split("\\.")[2]);
+                        if (columnNo == i) {
+                            BitMapFile bitMapFile = getBMIndex(fileName);
+                            bitMapFile.fullDelete(pos_marked);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                if(deletedTuples != null)
+                    deletedTuples.close();
+                f.deleteFile();
+                return false;
+            }
+        }
+        f.deleteFile();
+        return true;
+    }
+
     public String generateBTName(int column) {
         return "BT." + CFname + "." + column;
     }
 
-    public String getDeletedFileName() {
+    public String generateDeletedFileName() {
         return CFname + ".del";
     }
 
