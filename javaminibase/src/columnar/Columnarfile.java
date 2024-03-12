@@ -112,15 +112,14 @@ public class Columnarfile {
             InvalidSlotNumberException, SpaceNotAvailableException, HFException, HFBufMgrException, HFDiskMgrException {
         columnMap = new HashMap<>();
         try {
-            HF = new Heapfile[numColumns + 1];
-            Heapfile hdrFile = new Heapfile(name + ".hdr");
-            HF[0] = hdrFile;
+            HF = new Heapfile[numColumns+1];
+            HF[0] = new Heapfile(name + ".hdr");
         } catch (Exception e) {
             e.printStackTrace();
             return;
         }
         this.numColumns = nColumns;
-        for (int column = 1; column < nColumns + 1; column++) {
+        for (int column = 1; column < nColumns+1; column++) {
             try {
                 HF[column] = new Heapfile(name + ".Col" + column);
             } catch (Exception e) {
@@ -130,23 +129,23 @@ public class Columnarfile {
         this.CFname = name;
         this.type = new AttrType[numColumns];
         this._file_deleted = false;
-        this.BTfiles = new String[nColumns];
+        this.BTfiles = new String[numColumns];
         Tuple temp = new Tuple();
-        for (int i = 0; i < nColumns; i++) {
+        for(int i=0;i<numColumns;i++){
             this.type[i] = new AttrType(type[i].attrType);
             columnMap.put(colNames[i], i);
         }
 
-        AttrType[] htypes = new AttrType[1 + (this.numColumns * 2)];
+        AttrType[] htypes = new AttrType[1 + (numColumns * 2)];
         htypes[0] = new AttrType(AttrType.attrInteger);
         for (int i = 1; i < htypes.length - 1; i = i + 2) {
             htypes[i] = new AttrType(AttrType.attrInteger);
             htypes[i + 1] = new AttrType(AttrType.attrString);
         }
-        // htypes[htypes.length - 1] = new AttrType(AttrType.attrInteger);
-        short[] hsizes = new short[this.numColumns];
-        for (int i = 0; i < this.numColumns; i++) {
-            hsizes[i] = 20; // column name can't be more than 20 chars
+        //htypes[htypes.length - 1] = new AttrType(AttrType.attrInteger);
+        short[] hsizes = new short[numColumns];
+        for (int i = 0; i < numColumns; i++) {
+            hsizes[i] = 20; //column name can't be more than 20 chars
         }
         Tuple hdr = new Tuple();
         hdr.setHdr((short) htypes.length, htypes, hsizes);
@@ -154,11 +153,11 @@ public class Columnarfile {
 
         hdr = new Tuple(size);
         hdr.setHdr((short) htypes.length, htypes, hsizes);
-        hdr.setIntFld(1, this.numColumns);
+        hdr.setIntFld(1, numColumns);
         int j = 0;
-        for (int i = 0; i < this.numColumns; i++, j = j + 3) {
+        for (int i = 0; i < numColumns; i++, j = j + 2) {
             hdr.setIntFld(2 + j, type[i].attrType);
-            hdr.setStrFld(4 + j, colNames[i]);
+            hdr.setStrFld(3 + j, colNames[i]);
         }
         HF[0].insertRecord(hdr.returnTupleByteArray());
         BTMap = new HashMap<>();
