@@ -8,6 +8,8 @@ public class TID {
     int position;
     RID[] recordIDs;
 
+    public TID(){}
+
     public TID(int numRIDs) {
         this.numRIDs = numRIDs;
         this.position = 1;
@@ -32,13 +34,13 @@ public class TID {
         this.recordIDs = recordIDs;
     }
 
-    void copyTid(TID tid) {
+    public void copyTid(TID tid) {
         numRIDs = tid.numRIDs;
         position = tid.position;
         recordIDs = tid.recordIDs;
     }
 
-    boolean equals(TID tid) {
+    public boolean equals(TID tid) {
         if (numRIDs == tid.numRIDs) {
             return false;
         }
@@ -53,7 +55,7 @@ public class TID {
         return true;
     }
 
-    void writeToByteArray(byte[] array, int offset) throws java.io.IOException {
+    public void writeToByteArray(byte[] array, int offset) throws java.io.IOException {
         Convert.setIntValue(numRIDs, offset, array);
         Convert.setIntValue(position, offset + 4, array);
         for (int i = 0; i < recordIDs.length; i++) {
@@ -61,16 +63,16 @@ public class TID {
         }
     }
 
-    void setPosition(int position) {
+    public void setPosition(int position) {
         this.position = position;
     }
 
-    int getPosition()
+    public int getPosition()
     {
         return this.position;
     }
 
-    void setRID(int column, RID recordID) throws Exception {
+    public void setRID(int column, RID recordID) throws Exception {
         if (column < numRIDs)
             this.recordIDs[column] = recordID;
         else
