@@ -15,6 +15,7 @@ import heap.InvalidUpdateException;
 import heap.Scan;
 import heap.SpaceNotAvailableException;
 import heap.Tuple;
+import iterator.ColumnarColumnScan;
 import iterator.FldSpec;
 import iterator.RelSpec;
 
@@ -22,13 +23,6 @@ import java.util.*;
 
 import bitmap.BitMapFile;
 import btree.BTreeFile;
-import btree.ConstructPageException;
-import btree.DeleteFileEntryException;
-import btree.FreePageException;
-import btree.IteratorException;
-import btree.PinPageException;
-import btree.UnpinPageException;
-
 import IntegerValue;
 import StringValue;
 
@@ -45,7 +39,7 @@ public class Columnarfile {
     // Map to store the BTree indexes
     HashMap<String, BTreeFile> BTMap;
     // Map to store the BitMap indexes
-    // HashMap<String, BitMapFile> BMMap;
+    HashMap<String, BitMapFile> BMMap;
 
     /**
      * Opens existing columnar
@@ -77,7 +71,7 @@ public class Columnarfile {
             scan = f.openScan();
             RID hdrRid = new RID();
             Tuple hdr = scan.getNext(hdrRid);
-            // hdr.setHeaderMetaData();
+            hdr.setHeaderMetaData();
             this.numColumns = (short) hdr.getIntFld(1);
             type = new AttrType[numColumns];
             HF = new Heapfile[numColumns];
@@ -89,7 +83,7 @@ public class Columnarfile {
                 columnMap.put(colName, i);
             }
             BTMap = new HashMap<>();
-            // BMMap = new HashMap<>();
+            BMMap = new HashMap<>();
 
             // create a idx file to store all column which consists of indexes
             pid = SystemDefs.JavabaseDB.get_file_entry(name + ".idx");
@@ -99,12 +93,12 @@ public class Columnarfile {
                 RID r = new RID();
                 Tuple t = scan.getNext(r);
                 while (t != null) {
-                    // t.setHeaderMetaData();
+                    t.setHeaderMetaData();
                     int indexType = t.getIntFld(1);
                     if (indexType == 0)
                         BTMap.put(t.getStrFld(2), null);
-                    // else if (indexType == 1)
-                    // BMMap.put(t.getStrFld(2), null);
+                    else if (indexType == 1)
+                        BMMap.put(t.getStrFld(2), null);
                     t = scan.getNext(r);
                 }
             }
@@ -168,13 +162,10 @@ public class Columnarfile {
         }
         HF[0].insertRecord(hdr.returnTupleByteArray());
         BTMap = new HashMap<>();
-        // BMMap = new HashMap<>();
+        BMMap = new HashMap<>();
     }
 
-    void deleteColumnarFile() throws FileAlreadyDeletedException,
-            InvalidSlotNumberException, InvalidTupleSizeException,
-            HFBufMgrException, HFDiskMgrException, IOException, HFException, IteratorException, UnpinPageException,
-            FreePageException, DeleteFileEntryException, ConstructPageException, PinPageException {
+    void deleteColumnarFile() throws Exception {
         if (_file_deleted) {
             throw new FileAlreadyDeletedException(null, "file alread deleted");
         }
@@ -189,6 +180,7 @@ public class Columnarfile {
         for (int column = 0; column < numColumns; column++) {
             HF[column].deleteFile();
         }
+
         Iterator<Map.Entry<String, BTreeFile>> iterator = BTMap.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<String, BTreeFile> entry = iterator.next();
@@ -196,13 +188,12 @@ public class Columnarfile {
             btf.destroyFile();
         }
 
-        // Iterator <Map.Entry<String,BitMapFile>> iterator2 =
-        // BMMap.entrySet().iterator();
-        // while(iterator2.hasNext()){
-        // Map.Entry<String,BitMapFile> entry= iterator2.next();
-        // BitMapFile bmf= entry.getValue();
-        // bmf.destroyBitMapFile();
-        // }
+        Iterator<Map.Entry<String, BitMapFile>> iterator2 = BMMap.entrySet().iterator();
+        while (iterator2.hasNext()) {
+            Map.Entry<String, BitMapFile> entry = iterator2.next();
+            BitMapFile bmf = entry.getValue();
+            bmf.destroyBitMapFile();
+        }
     }
 
     TID insertTuple(byte[] tuplePtr) throws FileAlreadyDeletedException,
@@ -421,15 +412,13 @@ public class Columnarfile {
         return "BM" + "." + get_ColumnarFile_name() + "." + columnNo + "." + value.toString();
     }
 
-    boolean createBitMapIndex(int columnNo, ValueClass value) {
+    boolean createBitMapIndex(int columnNo, ValueClass value) throws Exception {
 
         short[] targetedCols = new short[1];
         targetedCols[0] = (short) columnNo;
 
         FldSpec[] projection = new FldSpec[1];
         projection[0] = new FldSpec(new RelSpec(RelSpec.outer), 1);
-        // import ColumnarColumnScan;
-        // ...
 
         ColumnarColumnScan columnScan = new ColumnarColumnScan(get_ColumnarFile_name(), columnNo,
                 projection,
@@ -446,25 +435,23 @@ public class Columnarfile {
                 break;
             }
 
+            ValueClass v;
             switch (type[columnNo].attrType) {
                 case 0:
-                    ValueClass valueClass = new IntegerValue(tuple.getIntFld(1));
+                    v = new IntegerValue(tuple.getIntFld(1));
                     break;
                 case 3:
-                    ValueClass valueClass = new StringValue(tuple.getStrFld(1));
+                    v = new StringValue(tuple.getStrFld(1));
                     break;
-
                 default:
+                    v = new StringValue(tuple.getStrFld(1));
                     break;
             }
-            // ValueClass valueClass = ValueFactory.getValueClass(tuple.getTupleByteArray(),
-            // type[columnNo],
-            // get_attr_size(columnNo));
-            // if (valueClass.toString().equals(value.toString())) {
-            // bitMapFile.insert(position);
-            // } else {
-            // bitMapFile.delete(position);
-            // }
+            if (v.toString().equals(value.toString())) {
+                bitMapFile.Insert(position);
+            } else {
+                bitMapFile.Delete(position);
+            }
             position++;
         }
         columnScan.close();
@@ -504,4 +491,43 @@ public class Columnarfile {
                 return 0;
         }
     }
+
+    /**
+     * Write the indexes created on each column to the .idx file
+     *
+     * @param indexType
+     * @param indexName
+     * @return
+     */
+    private boolean addIndexToColumnar(int indexType, String indexName) {
+
+        try {
+            AttrType[] itypes = new AttrType[2];
+            itypes[0] = new AttrType(AttrType.attrInteger);
+            itypes[1] = new AttrType(AttrType.attrString);
+            short[] isizes = new short[1];
+            isizes[0] = 40; // index name can't be more than 40 chars
+            Tuple t = new Tuple();
+            t.setHdr((short) 2, itypes, isizes);
+            int size = t.size();
+            t = new Tuple(size);
+            t.setHdr((short) 2, itypes, isizes);
+            t.setIntFld(1, indexType);
+            t.setStrFld(2, indexName);
+            Heapfile f = new Heapfile(CFname + ".idx");
+            f.insertRecord(t.getTupleByteArray());
+
+            if (indexType == 0) {
+                BTMap.put(indexName, null);
+            } else if (indexType == 1) {
+                BMMap.put(indexName, null);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
 }
