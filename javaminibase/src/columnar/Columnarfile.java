@@ -111,6 +111,7 @@ public class Columnarfile {
     public Columnarfile(java.lang.String name, int nColumns, AttrType[] type, String[] colNames)
             throws InvalidTypeException, InvalidTupleSizeException, IOException, FieldNumberOutOfBoundException,
             InvalidSlotNumberException, SpaceNotAvailableException, HFException, HFBufMgrException, HFDiskMgrException {
+        this.numColumns = nColumns;
         columnMap = new HashMap<>();
         try {
             HF = new Heapfile[numColumns + 1];
@@ -119,7 +120,6 @@ public class Columnarfile {
             e.printStackTrace();
             return;
         }
-        this.numColumns = nColumns;
         for (int column = 1; column < nColumns + 1; column++) {
             try {
                 HF[column] = new Heapfile(name + ".Col" + column);
@@ -355,17 +355,16 @@ public class Columnarfile {
     }
 
     /**
-    * opens tuple scan on the given columns
-    *
-    * @param columns
-    * @return
-    * @throws Exception
-    */
+     * opens tuple scan on the given columns
+     *
+     * @param columns
+     * @return
+     * @throws Exception
+     */
     public TupleScan openTupleScan(short[] columns) throws Exception {
         TupleScan result = new TupleScan(this, columns);
         return result;
-        }
-    
+    }
 
     public Scan openColumnScan(int columnNo) throws Exception {
         if (columnNo < numColumns)
@@ -832,8 +831,7 @@ public class Columnarfile {
         return BMMap.get(indexName);
     }
 
-
-    public boolean createBMIndexForAllValuesInColumn(int columnNo) throws Exception{
+    public boolean createBMIndexForAllValuesInColumn(int columnNo) throws Exception {
         short[] targetedCols = new short[1];
         targetedCols[0] = (short) columnNo;
 
@@ -895,5 +893,5 @@ public class Columnarfile {
 
         return true;
     }
-    
+
 }

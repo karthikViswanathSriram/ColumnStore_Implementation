@@ -42,6 +42,7 @@ db:
 	make -C bitmap
 	make -C columnar
 	make -C iterator
+	make -C interfaces
 
 	
 doc:
