@@ -39,7 +39,10 @@ db:
 	make -C diskmgr
 	make -C heap
 	make -C index
+	make -C bitmap
+	make -C columnar
 	make -C iterator
+
 	
 doc:
 	$(JAVADOC) $(DOCFILES)
