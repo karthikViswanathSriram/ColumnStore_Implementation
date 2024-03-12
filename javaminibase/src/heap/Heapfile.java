@@ -802,6 +802,42 @@ public class Heapfile implements Filetype, GlobalConst {
 
 	}
 
+	public Tuple getRecord(int position) throws HFBufMgrException, IOException, InvalidSlotNumberException, InvalidTupleSizeException {
+        PageId curdirpid = new PageId();
+        curdirpid.pid = _firstDirPageId.pid;
+        HFPage curdirpage = new HFPage();
+        Tuple atuple;
+        pinPage(curdirpid,curdirpage,false);
+        int tempos = 0;
+        RID rid=null;
+        PageId nextdirpid=new PageId();
+        nextdirpid.pid=0;
+        while(curdirpid.pid!= INVALID_PAGE){
+            for(rid=curdirpage.firstRecord();rid!=null;rid=curdirpage.nextRecord(rid)){
+                atuple=curdirpage.getRecord(rid);
+                DataPageInfo dpinfo=new DataPageInfo(atuple);
+                if(position >= tempos && position < tempos+dpinfo.recct){
+                    unpinPage(curdirpid,false);
+                    HFPage apage=new HFPage();
+                    pinPage(dpinfo.pageId,apage,false);
+                    int slot=apage.slotAtRelativePosition(position-tempos);
+                    unpinPage(dpinfo.pageId,false);
+                    RID nrid=new RID(dpinfo.pageId,slot);
+                    Tuple result=apage.returnRecord(nrid);
+                    return result;
+                }
+                tempos+=dpinfo.recct;
+            }
+            nextdirpid=curdirpage.getNextPage();
+            unpinPage(curdirpid,false);
+            curdirpid.pid=nextdirpid.pid;
+            if(nextdirpid.pid!= INVALID_PAGE){
+                pinPage(curdirpid,curdirpage,false);
+            }
+        }
+        return null;
+    }
+
 	/**
 	 * Initiate a sequential scan.
 	 * 

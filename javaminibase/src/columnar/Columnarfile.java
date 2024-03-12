@@ -425,7 +425,7 @@ public class Columnarfile {
      * @param position
      * @return
      */
-    public boolean markTupleDeleted(TID tid) {
+    public boolean markTupleDeleted(int position) {
         String name = generateDeletedFileName();
         try {
             Heapfile f = new Heapfile(name);
@@ -433,12 +433,12 @@ public class Columnarfile {
             types[0] = new AttrType(AttrType.attrInteger);
             Tuple t = new Tuple(10); // I think 8 is enough? 2 + 2 + 4?
             t.setHdr((short) 1, types, null);
-            t.setIntFld(1, tid.position);
+            t.setIntFld(1, position);
             f.insertRecord(t.getTupleByteArray());
 
             // update Index files
             for (int column = 0; column < numColumns; column++) {
-                Tuple tuple = getColumn(column).getRecord(tid.recordIDs[column]);
+                Tuple tuple = getColumn(column).getRecord(position);
                 ValueClass valueClass;
                 KeyClass keyClass;
                 valueClass = type[column].attrType == AttrType.attrString
@@ -452,11 +452,11 @@ public class Columnarfile {
                 String bitMapFileName = generateBMName(column, valueClass);
                 if (BTMap.containsKey(bTreeFileName)) {
                     BTreeFile bTreeFile = getBTIndex(bTreeFileName);
-                    bTreeFile.Delete(keyClass, tid.position);
+                    bTreeFile.Delete(keyClass, position);
                 }
                 if (BMMap.containsKey(bitMapFileName)) {
                     BitMapFile bitMapFile = getBMIndex(bitMapFileName);
-                    bitMapFile.Delete(tid.position);
+                    bitMapFile.Delete(position);
                 }
             }
 
