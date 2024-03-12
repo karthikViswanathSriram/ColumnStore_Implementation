@@ -334,6 +334,13 @@ public class Columnarfile {
         return val;
     }
 
+    public int getColumnNumberFromColName(String colName)
+    {
+        if(columnMap.containsKey(colName))
+            return columnMap.get(colName);
+        return -1;
+    }
+
     public int getTupleCnt() throws IOException, FileAlreadyDeletedException,
             InvalidSlotNumberException, InvalidTupleSizeException, Exception,
             HFBufMgrException, HFDiskMgrException, IOException, HFException, SpaceNotAvailableException,
