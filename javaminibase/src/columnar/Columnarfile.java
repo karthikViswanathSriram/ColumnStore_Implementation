@@ -165,7 +165,7 @@ public class Columnarfile {
         BMMap = new HashMap<>();
     }
 
-    void deleteColumnarFile() throws Exception {
+    public void deleteColumnarFile() throws Exception {
         if (_file_deleted) {
             throw new FileAlreadyDeletedException(null, "file alread deleted");
         }
@@ -197,7 +197,7 @@ public class Columnarfile {
         }
     }
 
-    TID insertTuple(byte[] tuplePtr) throws FileAlreadyDeletedException,
+    public TID insertTuple(byte[] tuplePtr) throws FileAlreadyDeletedException,
             InvalidSlotNumberException, InvalidTupleSizeException,
             HFBufMgrException, HFDiskMgrException, IOException, HFException, SpaceNotAvailableException {
         TID tid = new TID(numColumns);
@@ -273,7 +273,7 @@ public class Columnarfile {
         // need to figure out what to do with position variable- for BMmap and BT index
     }
 
-    Tuple getTuple(TID tid) throws IOException, FileAlreadyDeletedException,
+    public Tuple getTuple(TID tid) throws IOException, FileAlreadyDeletedException,
             InvalidSlotNumberException, InvalidTupleSizeException, Exception,
             HFBufMgrException, HFDiskMgrException, IOException, HFException, SpaceNotAvailableException,
             FieldNumberOutOfBoundException {
@@ -316,7 +316,7 @@ public class Columnarfile {
         return tuple;
     }
 
-    ValueClass getValue(TID tid, int column) throws IOException, FileAlreadyDeletedException,
+    public ValueClass getValue(TID tid, int column) throws IOException, FileAlreadyDeletedException,
             InvalidSlotNumberException, InvalidTupleSizeException, Exception,
             HFBufMgrException, HFDiskMgrException, IOException, HFException, SpaceNotAvailableException,
             FieldNumberOutOfBoundException {
@@ -334,7 +334,7 @@ public class Columnarfile {
         return val;
     }
 
-    int getTupleCnt() throws IOException, FileAlreadyDeletedException,
+    public int getTupleCnt() throws IOException, FileAlreadyDeletedException,
             InvalidSlotNumberException, InvalidTupleSizeException, Exception,
             HFBufMgrException, HFDiskMgrException, IOException, HFException, SpaceNotAvailableException,
             FieldNumberOutOfBoundException {
@@ -343,20 +343,20 @@ public class Columnarfile {
     }
 
     // --------implement this function--------------
-    TupleScan openTupleScan() throws Exception{
+    public TupleScan openTupleScan() throws Exception{
         
         TupleScan scanResult = new TupleScan(this);
         return scanResult;
     }
 
-    Scan openColumnScan(int columnNo) throws Exception {
+    public Scan openColumnScan(int columnNo) throws Exception {
         if (columnNo < numColumns)
             return HF[columnNo].openScan();
         else
             throw new Exception("Invalid Column number");
     }
 
-    boolean updateTuple(TID tid, Tuple newtuple) throws InvalidSlotNumberException, InvalidUpdateException,
+    public boolean updateTuple(TID tid, Tuple newtuple) throws InvalidSlotNumberException, InvalidUpdateException,
             InvalidTupleSizeException, HFException, HFDiskMgrException, HFBufMgrException, Exception {
         byte[] arr = null;
         int length = 0;
@@ -387,7 +387,7 @@ public class Columnarfile {
         return flag;
     }
 
-    boolean updateColumnofTuple(TID tid, Tuple newtuple, int column)
+    public boolean updateColumnofTuple(TID tid, Tuple newtuple, int column)
             throws InvalidSlotNumberException, InvalidUpdateException, InvalidTupleSizeException, HFException,
             HFDiskMgrException, HFBufMgrException, Exception {
         byte[] arr = null;
@@ -418,7 +418,15 @@ public class Columnarfile {
         return "BT." + CFname + "." + column;
     }
 
-    boolean createBTreeIndex(int column) throws Exception {
+    public String getDeletedFileName() {
+        return CFname + ".del";
+    }
+
+    public String generateBMName(int columnNo, ValueClass value) {
+        return "BM" + "." + get_ColumnarFile_name() + "." + columnNo + "." + value.toString();
+    }
+
+    public boolean createBTreeIndex(int column) throws Exception {
         int keysize = 0;
         String indexName = generateBTName(column);
         keysize = get_attr_size(column);
@@ -450,11 +458,7 @@ public class Columnarfile {
         return true;
     }
 
-    String generateBMName(int columnNo, ValueClass value) {
-        return "BM" + "." + get_ColumnarFile_name() + "." + columnNo + "." + value.toString();
-    }
-
-    boolean createBitMapIndex(int columnNo, ValueClass value) throws Exception {
+    public boolean createBitMapIndex(int columnNo, ValueClass value) throws Exception {
 
         short[] targetedCols = new short[1];
         targetedCols[0] = (short) columnNo;
