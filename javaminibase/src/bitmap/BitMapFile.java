@@ -9,17 +9,18 @@ import btree.FreePageException;
 import btree.GetFileEntryException;
 import btree.PinPageException;
 import btree.UnpinPageException;
+import columnar.Columnarfile;
+import columnar.IntegerValue;
+import columnar.StringValue;
 import columnar.ValueClass;
 import diskmgr.Page;
-// import columnar.ValueInt;
-// import columnar.ValueString;
 import global.AttrType;
 import global.GlobalConst;
 import global.PageId;
 import global.SystemDefs;
 import heap.HFBufMgrException;
 
-public class BMFile implements GlobalConst {
+public class BitMapFile implements GlobalConst {
 
     private BitMapHeaderPage bmHeaderPage;
     private PageId bmHeaderPageId;
@@ -109,7 +110,7 @@ public class BMFile implements GlobalConst {
         return bmHeaderPageId;
     }
 
-    public BMFile(String filename) throws Exception {
+    public BitMapFile(String filename) throws Exception {
         // Constructor for opening an existing BitMapFile with given filename
 
         bmHeaderPageId = get_file_entry(filename);
@@ -126,14 +127,14 @@ public class BMFile implements GlobalConst {
          * integer
          */
         if (attrType.attrType == AttrType.attrString) {
-            value = new ValueString(bmHeaderPage.getValue());
+            value = new StringValue(bmHeaderPage.getValue());
         } else {
-            value = new ValueInt(Integer.parseInt(bmHeaderPage.getValue()));
+            value = new IntegerValue(Integer.parseInt(bmHeaderPage.getValue()));
         }
 
     }
 
-    public BMFile(String filename, Columnarfile columnarFile, Integer columnNo, ValueClass value)
+    public BitMapFile(String filename, Columnarfile columnarFile, Integer columnNo, ValueClass value)
             throws Exception {
         // Constructor for creating a new BitMapFile with given filename
         bmHeaderPageId = get_file_entry(filename);
@@ -145,18 +146,14 @@ public class BMFile implements GlobalConst {
         bmHeaderPageId = bmHeaderPage.getPageId();
         add_file_entry(filename, bmHeaderPageId);
         bmHeaderPage.set_rootId(new PageId(INVALID_PAGE));
-        bmHeaderPage.setColumnarFileName(columnarFile.getColumnarFileName());
+        bmHeaderPage.setColumnarFileName(columnarFile.get_ColumnarFile_name());
         bmHeaderPage.setColumnNumber(columnNo);
         bmHeaderPage.setAttrType(attrType);
 
-        /*
-         * Check lalit's part and change this. And where are we converting string to
-         * integer?
-         */
-        if (value instanceof ValueInt) {
-            bmHeaderPage.setValue(((ValueInt) value).getValue().toString());
+        if (value instanceof IntegerValue) {
+            bmHeaderPage.setValue(((IntegerValue) value).getValue().toString());
         } else {
-            bmHeaderPage.setValue(((ValueString) value).getValue());
+            bmHeaderPage.setValue(((StringValue) value).getValue());
         }
 
     }
