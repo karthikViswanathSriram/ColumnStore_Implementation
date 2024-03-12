@@ -354,6 +354,19 @@ public class Columnarfile {
         return scanResult;
     }
 
+    /**
+    * opens tuple scan on the given columns
+    *
+    * @param columns
+    * @return
+    * @throws Exception
+    */
+    public TupleScan openTupleScan(short[] columns) throws Exception {
+        TupleScan result = new TupleScan(this, columns);
+        return result;
+        }
+    
+
     public Scan openColumnScan(int columnNo) throws Exception {
         if (columnNo < numColumns)
             return HF[columnNo].openScan();

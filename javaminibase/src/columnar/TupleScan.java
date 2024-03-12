@@ -15,6 +15,7 @@ public class TupleScan implements GlobalConst {
     short[] str_attr_sizes;
     short str_size = 25;
     Scan[] sc;
+    int tuplesize;
 
     public TupleScan(Columnarfile f) throws InvalidTupleSizeException, IOException {
         cf = f;
@@ -25,14 +26,57 @@ public class TupleScan implements GlobalConst {
         }
         attrTypes = f.get_AttrTypes();
         int str_attr_count = 0;
+        tuplesize = 2 * (ncols) + 2;
         for (int i = 0; i < ncols; i++) {
-            if (attrTypes[i].attrType == AttrType.attrString) {
-                str_attr_count++;
-            }
+        if (attrTypes[i].attrType == AttrType.attrString) {
+            str_attr_count++;
+            tuplesize += str_size;
+        }
+        else
+            tuplesize += 4;
         }
         str_attr_sizes = new short[str_attr_count];
         Arrays.fill(str_attr_sizes, str_size);
     }
+        
+
+    /**
+    * This constructor truly takes advantage of columnar organization by scanning only
+    * required columns.
+    *
+    * @param f Columnarfile object
+    * @param columns array of column numbers that need to be scanned
+    * @throws InvalidTupleSizeException
+    * @throws IOException
+    */
+    public TupleScan(Columnarfile f,short[] columns) throws Exception {
+        cf = f;
+        ncols = (short)columns.length;
+        attrTypes = new AttrType[ncols];
+        sc=new Scan[ncols];
+        short strCnt = 0;
+        tuplesize = 2 * (ncols) + 2;
+        for(int i=0;i<ncols;i++){
+        
+        
+        short c = columns[i];
+        attrTypes[i] = f.type[c];
+        sc[i] = f.getColumn(c).openScan();
+        
+        
+        if(attrTypes[i].attrType == AttrType.attrString){
+        tuplesize += str_size;
+        strCnt++;
+        }
+        else
+        tuplesize += 4;
+        }
+        
+        
+        str_attr_sizes = new short[strCnt];
+        Arrays.fill(str_attr_sizes, str_size);
+    }
+    
 
     public void closetuplescan() {
         for (int i = 0; i < ncols; i++) {
@@ -41,12 +85,11 @@ public class TupleScan implements GlobalConst {
     }
 
     public Tuple getNext(TID tid) throws Exception {
-        Tuple tpl = new Tuple();
+        Tuple tpl = new Tuple(tuplesize);
         tpl.setHdr((short) ncols, attrTypes, str_attr_sizes);
         RID[] rids = new RID[ncols];
         byte[] data = tpl.getTupleByteArray();
-        int length = 0;
-        int offset = 0;
+        int offset = 2 * (ncols) + 2;;
         int position = 0;
         for (int i = 0; i < ncols; i++) {
             RID rid = new RID();
