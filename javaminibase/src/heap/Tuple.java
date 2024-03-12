@@ -508,4 +508,14 @@ public class Tuple implements GlobalConst {
   private short pad(short offset, AttrType type) {
     return 0;
   }
+
+  public void setHeaderMetaData() throws IOException {
+    fldCnt = Convert.getShortValue(tuple_offset, data);
+    fldOffset = new short[fldCnt + 1];
+    int pos = tuple_offset + 2;
+    for (int i = 0; i < fldCnt + 1; i++) {
+      fldOffset[i] = Convert.getShortValue(pos, data);
+      pos += 2;
+    }
+  }
 }
