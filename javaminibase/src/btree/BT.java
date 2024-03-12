@@ -159,11 +159,13 @@ public class BT implements GlobalConst {
         data = new IndexData(Convert.getIntValue(offset + length - 4, from));
       } else if (nodeType == NodeType.LEAF) {
         n = 8;
-        RID rid = new RID();
-        rid.slotNo = Convert.getIntValue(offset + length - 8, from);
-        rid.pageNo = new PageId();
-        rid.pageNo.pid = Convert.getIntValue(offset + length - 4, from);
-        data = new LeafData(rid);
+        // RID rid = new RID();
+        // rid.slotNo = Convert.getIntValue(offset + length - 8, from);
+        // rid.pageNo = new PageId();
+        // rid.pageNo.pid = Convert.getIntValue(offset + length - 4, from);
+        // ToDo: Test this
+        int position = Convert.getIntValue(offset + length - 4, from);
+        data = new LeafData(position);
       } else
         throw new NodeNotMatchException(null, "node types do not match");
 
@@ -221,10 +223,13 @@ public class BT implements GlobalConst {
         Convert.setIntValue(((IndexData) entry.data).getData().pid,
             m, data);
       } else if (entry.data instanceof LeafData) {
-        Convert.setIntValue(((LeafData) entry.data).getData().slotNo,
-            m, data);
-        Convert.setIntValue(((LeafData) entry.data).getData().pageNo.pid,
-            m + 4, data);
+        // Convert.setIntValue(((LeafData) entry.data).getData().slotNo,
+        //     m, data);
+        // Convert.setIntValue(((LeafData) entry.data).getData().pageNo.pid,
+        //     m + 4, data);
+        // ToDo: Test this
+        Convert.setIntValue(((LeafData) entry.data).getData(),
+                        m, data);
 
       } else
         throw new NodeNotMatchException(null, "node types do not match");
