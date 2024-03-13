@@ -1,0 +1,3 @@
+make db
+java interfaces/BatchInsert interfaces/sampleData.txt testcoldb student 4 1
+java interfaces/Select testcoldb student A,B,C "C = 6" A,B FILE "" A,B,C 100 0
