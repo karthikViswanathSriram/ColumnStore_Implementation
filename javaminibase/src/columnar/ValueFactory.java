@@ -15,11 +15,11 @@ public class ValueFactory {
         switch (type.attrType) {
             case 0:
                 String s = Convert.getStrValue(0, data, size);
-                value = new ValueString(s);
+                value = new StringValue(s);
                 break;
             case 1:
                 Integer i = Convert.getIntValue(0, data);
-                value = new ValueInt(i);
+                value = new IntegerValue(i);
                 break;
             case 2:
                 Float f = Convert.getFloValue(0, data);
@@ -35,10 +35,10 @@ public class ValueFactory {
         ValueClass value = null;
         switch (type.attrType) {
             case 0:
-                value = new ValueString(tuple.getStrFld(1));
+                value = new StringValue(tuple.getStrFld(1));
                 break;
             case 1:
-                value = new ValueInt(tuple.getIntFld(1));
+                value = new IntegerValue(tuple.getIntFld(1));
                 break;
             case 2:
                 value = new ValueFloat(tuple.getFloFld(1));

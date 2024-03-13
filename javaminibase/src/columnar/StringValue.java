@@ -1,8 +1,8 @@
 package columnar;
 
-public class ValueString<String> extends ValueClass {
+public class StringValue<String> extends ValueClass {
 
-    public ValueString(String val) {
+    public StringValue(String val) {
         value = val;
     }
 

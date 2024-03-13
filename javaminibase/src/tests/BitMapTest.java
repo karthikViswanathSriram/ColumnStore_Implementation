@@ -3,7 +3,7 @@ package tests;
 import bitmap.BM;
 import bitmap.BitMapFile;
 import columnar.Columnarfile;
-import columnar.ValueInt;
+import columnar.IntegerValue;
 import diskmgr.PCounter;
 import global.AttrType;
 import global.SystemDefs;
@@ -65,8 +65,8 @@ class BitMapDriver extends TestDriver {
                 cf.insertTuple(t.getTupleByteArray());
             }
 
-            cf.createBitMapIndex(0, new ValueInt(4));
-            BitMapFile bitMapFile = new BitMapFile(cf.getBMName(0, new ValueInt(4)));
+            cf.createBitMapIndex(0, new IntegerValue(4));
+            BitMapFile bitMapFile = new BitMapFile(cf.getBMName(0, new IntegerValue(4)));
             BM.printBitMap(bitMapFile.getHeaderPage());
             bitMapFile.close();
         } catch (Exception e) {

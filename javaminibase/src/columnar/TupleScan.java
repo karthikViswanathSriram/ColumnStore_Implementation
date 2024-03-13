@@ -29,7 +29,7 @@ public class TupleScan {
 	public TupleScan(Columnarfile f) throws Exception {
         file = f;
         numColumns = f.numColumns;
-        atype = f.atype;
+        atype = f.attrTypes;
         asize = f.asize;
         strSize = f.getStrSize();
         toffset = f.getOffset();
@@ -59,7 +59,7 @@ public class TupleScan {
         for(int i=0;i<numColumns;i++){
 
             short c = columns[i];
-            atype[i] = f.atype[c];
+            atype[i] = f.attrTypes[c];
             asize[i] = f.asize[c];
             sc[i] = f.getColumn(c).openScan();
 
@@ -74,7 +74,7 @@ public class TupleScan {
         for(int i = 0; i < numColumns; i++){
             short c = columns[i];
             if(atype[i].attrType == AttrType.attrString) {
-                strSize[cnt++] = f.attrsizes[c];
+                strSize[cnt++] = f.attrSize[c];
             }
             tuplesize += asize[i];
         }

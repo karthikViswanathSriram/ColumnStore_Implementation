@@ -1,8 +1,8 @@
 package columnar;
 
-public class ValueInt<Integer> extends ValueClass {
+public class IntegerValue<Integer> extends ValueClass {
 
-    public ValueInt(Integer val) {
+    public IntegerValue(Integer val) {
         value = val;
     }
 
