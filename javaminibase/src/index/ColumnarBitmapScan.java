@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
-public class ColumnarBitmapScan extends Iterator implements GlobalConst {
+public class ColumnarBitmapScan extends Iterator implements GlobalConst{
 
     private List<BitmapFileScan> scans;
     private Columnarfile columnarfile;
@@ -28,9 +28,10 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst {
     private int _columnNo;
 
     public ColumnarBitmapScan(Columnarfile cf,
-            int columnNo,
-            CondExpr[] selects,
-            boolean indexOnly) throws IndexException {
+                              int columnNo,
+                              CondExpr[] selects,
+                              boolean indexOnly
+    ) throws IndexException {
 
         _selects = selects;
         index_only = indexOnly;
@@ -45,8 +46,8 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst {
 
         try {
             scans = new ArrayList<>();
-            for (String bmName : columnarfile.getAvailableBM(columnNo)) {
-                if (evalBMName(bmName)) {
+            for (String bmName : columnarfile.getAvailableBM(columnNo)){
+                if(evalBMName(bmName)){
                     scans.add((new BitMapFile(bmName)).new_scan());
                 }
             }
@@ -66,7 +67,7 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst {
         return delete_next_BM();
     }
 
-    public Tuple get_next_BM() {
+    public Tuple get_next_BM(){
         int position = 0;
         while (position != -1) {
             try {
@@ -79,7 +80,7 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst {
                 AttrType[] type = new AttrType[1];
                 type[0] = new AttrType(AttrType.attrInteger);
                 short[] sizes = new short[0];
-                JTuple.setHdr((short) 1, type, sizes);
+                JTuple.setHdr((short)1, type, sizes);
                 JTuple.setIntFld(1, position);
                 return JTuple;
 
@@ -92,23 +93,24 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst {
 
     private boolean delete_next_BM() throws IndexException, UnknownKeyTypeException {
         int position = get_next_position();
-        if (position < 0)
+        if(position < 0)
             return false;
 
         return columnarfile.markTupleDeleted(position);
     }
 
-    public int get_next_position() {
+    public int get_next_position(){
         try {
 
             if (scanCounter == 0 || scanCounter > counter) {
                 bitMaps = new BitSet();
-                for (BitmapFileScan s : scans) {
+                for(BitmapFileScan s : scans){
                     counter = s.counter;
                     BitSet bs = s.get_next_bitmap();
-                    if (bs == null) {
+                    if(bs == null) {
                         return -1;
-                    } else {
+                    }
+                    else {
                         bitMaps.or(bs);
                     }
                 }
@@ -122,7 +124,8 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst {
                     scanCounter++;
                 }
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e){
             e.printStackTrace();
         }
         return -1;
@@ -131,38 +134,39 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst {
     public void close() throws Exception {
         if (!closeFlag) {
             closeFlag = true;
-            for (BitmapFileScan s : scans) {
+            for(BitmapFileScan s : scans){
                 s.close();
             }
         }
     }
 
     boolean evalBMName(String s) throws Exception {
-        if (_selects == null)
+        if(_selects == null)
             return true;
 
         short[] _sizes = new short[1];
-        _sizes[0] = columnarfile.get_attr_size(_columnNo);
+        _sizes[0] = columnarfile.getAttrsizeforcolumn(_columnNo);
         AttrType[] _types = new AttrType[1];
         _types[0] = columnarfile.getAttrtypeforcolumn(_columnNo);
 
-        byte[] data = new byte[6 + _sizes[0]];
+        byte[] data = new byte[6+_sizes[0]];
         String val = s.split("\\.")[3];
-        if (_types[0].attrType == AttrType.attrInteger) {
+        if(_types[0].attrType == AttrType.attrInteger) {
             int t = Integer.parseInt(val);
-            Convert.setIntValue(t, 6, data);
-        } else {
+            Convert.setIntValue(t,6, data);
+        }else {
             Convert.setStrValue(val, 6, data);
         }
-        Tuple jTuple = new Tuple(data, 0, data.length);
+        Tuple jTuple = new Tuple(data,0,data.length);
         _sizes[0] -= 2;
 
-        jTuple.setHdr((short) 1, _types, _sizes);
+        jTuple.setHdr((short)1,_types, _sizes);
 
-        if (PredEval.Eval(_selects, jTuple, null, _types, null))
+        if(PredEval.Eval(_selects,jTuple,null,_types, null))
             return true;
 
         return false;
     }
+
 
 }

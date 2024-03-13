@@ -1,201 +1,149 @@
 package bitmap;
 
-import java.io.*;
-import global.*;
-import diskmgr.*;
+import diskmgr.Page;
+import global.Convert;
+import global.GlobalConst;
+import global.PageId;
 
-/**
- * Class heap file page.
- * The design assumes that records are kept compacted when
- * deletions are performed.
- */
+import java.io.IOException;
 
-@SuppressWarnings("unused")
 public class BMPage extends Page implements GlobalConst {
 
-    // This is the size of the page header of a BMPage (in bytes)
-    public static final int DPHDR = 2 * 2 + 3 * 4;
-    // This is the total number of bits available in a BMPage
-    public static final int NUM_POSITIONS_AVAILABLE_IN_PAGE = (MAX_SPACE - DPHDR) * 8;
+    public static final int DPFIXED = 2 * 2 + 3 * 4;
+    public static final int NUM_POSITIONS_IN_A_PAGE = (MAX_SPACE - DPFIXED)*8;
 
-    // Removed TYPE, SLOT_CNT, USED_PTR from page metadata as they are used in heap
-    // pages only.
     public static final int COUNTER = 0;
     public static final int FREE_SPACE = 2;
     public static final int PREV_PAGE = 4;
     public static final int NEXT_PAGE = 8;
     public static final int CUR_PAGE = 12;
 
-    /*
-     * Warning:
-     * These items must all pack tight, (no padding) for
-     * the current implementation to work properly.
-     * Be careful when modifying this class.
-     */
 
-    /**
-     * number of bits used
-     */
+    private PageId curPage = new PageId();
     private short counter;
-
-    /**
-     * number of bits free in data[]
-     */
     private short freeSpace;
-
-    /**
-     * backward pointer to data page
-     */
     private PageId prevPage = new PageId();
-
-    /**
-     * forward pointer to data page
-     */
     private PageId nextPage = new PageId();
 
-    /**
-     * page number of this page
-     */
-    protected PageId curPage = new PageId();
-
-    /**
+    /***
      * Default constructor
      */
-
     public BMPage() {
-
     }
 
-    /**
-     * Constructor of class BMPage
-     * open a BMPage and make this BMPage point to the given page
-     * 
-     * @param page the given page in Page type
+    /***
+     * Take a BMPage as input and loads the current page with it's contents
+     * @param page
      */
-
     public BMPage(Page page) {
         data = page.getpage();
     }
 
-    /**
-     * Constructor of class HFPage
-     * open a existed hfpage
-     * 
-     * @param apage a page in buffer pool
+    /***
+     * Get available space present in the BMPage
+     * @return
+     * @throws IOException
      */
-
-    public void openBMpage(Page apage) {
-        data = apage.getpage();
+    public int available_space() throws IOException {
+        freeSpace = Convert.getShortValue(FREE_SPACE, data);
+        return freeSpace;
     }
 
-    /**
-     * Initialize a new page
-     * 
-     * @param pageNo the page number of a new page to be initialized
-     * @param apage  the Page to be initialized
-     * @see Page
-     * @exception IOException I/O errors
+    /***
+     * Pretty print the contents of the dunp page
+     * @throws IOException
      */
+    public void dumpPage() throws IOException {
+        curPage.pid = Convert.getIntValue(CUR_PAGE, data);
+        nextPage.pid = Convert.getIntValue(NEXT_PAGE, data);
+        freeSpace = Convert.getShortValue(FREE_SPACE, data);
+        counter = Convert.getShortValue(COUNTER, data);
+        prevPage.pid = Convert.getIntValue(PREV_PAGE, data);
 
-    public void init(PageId pageNo, Page apage)
-            throws IOException {
+        System.out.println("dumpPage");
+        System.out.println("prevPage= " + prevPage.pid);
+        System.out.println("curPage= " + curPage.pid);
+        System.out.println("nextPage= " + nextPage.pid);
+        System.out.println("freeSpace= " + freeSpace);
+        System.out.println("counter= " + counter);
+
+        for (int i = 0; i < counter; i++) {
+            Integer position = DPFIXED + i;
+            Byte val = Convert.getByteValue(position, data);
+            System.out.println("position=" + i + "  value=" + val);
+        }
+    }
+
+    /***
+     * Checks if the page is empty
+     * @return
+     * @throws IOException
+     */
+    public boolean empty() throws IOException {
+        int availableSpace = available_space();
+        if (availableSpace == MAX_SPACE - DPFIXED) {
+            return true;
+        }
+        return false;
+    }
+
+    /***
+     * Initializes the BMPage with the default metadata
+     * @param pageNo
+     * @param apage
+     * @throws IOException
+     */
+    public void init(PageId pageNo, Page apage) throws IOException {
         data = apage.getpage();
 
         counter = (short) 0;
         Convert.setShortValue(counter, COUNTER, data);
 
-        freeSpace = (short) NUM_POSITIONS_AVAILABLE_IN_PAGE; // amount of space available
-        Convert.setShortValue(freeSpace, FREE_SPACE, data);
-
         curPage.pid = pageNo.pid;
         Convert.setIntValue(curPage.pid, CUR_PAGE, data);
-
         nextPage.pid = prevPage.pid = INVALID_PAGE;
         Convert.setIntValue(prevPage.pid, PREV_PAGE, data);
         Convert.setIntValue(nextPage.pid, NEXT_PAGE, data);
 
-        // Setting empty bytes to 0
-        for (Integer i = DPHDR; i < MAX_SPACE; i++) {
+        freeSpace = (short) NUM_POSITIONS_IN_A_PAGE;    // amount of space available
+        Convert.setShortValue(freeSpace, FREE_SPACE, data);
+
+        for (int i = DPFIXED; i < MAX_SPACE; i++) {
             Convert.setByteValue((byte) 0, i, data);
         }
-
     }
 
-    /**
-     * Dump contents of a page
-     * 
-     * @exception IOException I/O errors
+    /***
+     * Getter for counter
+     * @return
+     * @throws Exception
      */
-    public void dumpPage()
-            throws IOException {
-        int i;
-
-        counter = Convert.getShortValue(COUNTER, data);
-        freeSpace = Convert.getShortValue(FREE_SPACE, data);
-        curPage.pid = Convert.getIntValue(CUR_PAGE, data);
-        nextPage.pid = Convert.getIntValue(NEXT_PAGE, data);
-
-        System.out.println("dumpPage");
-        System.out.println("curPage= " + curPage.pid);
-        System.out.println("nextPage= " + nextPage.pid);
-        System.out.println("freeSpace= " + freeSpace);
-        System.out.println("byteCnt= " + counter);
-
-        for (i = DPHDR; i < DPHDR + counter; i++) {
-            Byte val = Convert.getByteValue(i, data);
-            System.out.print("Position: " + i + "Value: " + val);
-
-        }
-
+    public Integer getCounter() throws Exception {
+        return (int) Convert.getShortValue(COUNTER, data);
     }
 
-    /**
-     * @return PageId of previous page
-     * @exception IOException I/O errors
+    /***
+     * Updates counter with the given value
+     * @param value
+     * @throws Exception
      */
-    public PageId getPrevPage()
-            throws IOException {
-        prevPage.pid = Convert.getIntValue(PREV_PAGE, data);
-        return prevPage;
+    public void updateCounter(Short value) throws Exception {
+        Convert.setShortValue(value, COUNTER, data);
+        Convert.setShortValue((short) (NUM_POSITIONS_IN_A_PAGE - value), FREE_SPACE, data);
     }
 
-    /**
-     * sets value of prevPage to pageNo
-     * 
-     * @param pageNo page number for previous page
-     * @exception IOException I/O errors
+    /***
+     * Take a BMPage as input and loads the current page with it's contents
+     * @param apage
      */
-    public void setPrevPage(PageId pageNo)
-            throws IOException {
-        prevPage.pid = pageNo.pid;
-        Convert.setIntValue(prevPage.pid, PREV_PAGE, data);
+    public void openBMpage(Page apage) {
+        data = apage.getpage();
     }
 
-    /**
-     * @return page number of next page
-     * @exception IOException I/O errors
-     */
-    public PageId getNextPage()
-            throws IOException {
-        nextPage.pid = Convert.getIntValue(NEXT_PAGE, data);
-        return nextPage;
-    }
-
-    /**
-     * sets value of nextPage to pageNo
-     * 
-     * @param pageNo page number for next page
-     * @exception IOException I/O errors
-     */
-    public void setNextPage(PageId pageNo)
-            throws IOException {
-        nextPage.pid = pageNo.pid;
-        Convert.setIntValue(nextPage.pid, NEXT_PAGE, data);
-    }
-
-    /**
-     * @return page number of current page
-     * @exception IOException I/O errors
+    /***
+     * Getter for current page id
+     * @return
+     * @throws IOException
      */
     public PageId getCurPage()
             throws IOException {
@@ -203,11 +151,10 @@ public class BMPage extends Page implements GlobalConst {
         return curPage;
     }
 
-    /**
-     * sets value of curPage to pageNo
-     * 
-     * @param pageNo page number for current page
-     * @exception IOException I/O errors
+    /***
+     * setter for the current page id
+     * @param pageNo
+     * @throws IOException
      */
     public void setCurPage(PageId pageNo)
             throws IOException {
@@ -215,86 +162,73 @@ public class BMPage extends Page implements GlobalConst {
         Convert.setIntValue(curPage.pid, CUR_PAGE, data);
     }
 
-    /**
-     * @return counter used in this page
-     * @exception IOException I/O errors
-     */
-    public short getCounter()
-            throws IOException {
-        counter = Convert.getShortValue(COUNTER, data);
-        return counter;
-    }
-
-    /**
-     * sets value of counter to byteCtr
-     * 
-     * @param byteCtr number of bytes used in this page
-     * @exception IOException I/O errors
-     */
-    public void setCounter(short byteCtr)
-            throws IOException {
-        counter = byteCtr;
-        Convert.setShortValue(counter, COUNTER, data);
-    }
-
-    /**
-     * returns the amount of available space on the page.
-     * 
-     * @return the amount of available space on the page
-     * @exception IOException I/O errors
-     */
-    public int available_space() throws IOException {
-        freeSpace = Convert.getShortValue(FREE_SPACE, data);
-        return freeSpace;
-    }
-
-    /**
-     * Determining if the page is empty
-     * 
-     * @return true if the BMPage is has no data in it, false otherwise
-     * @exception IOException I/O errors
-     */
-    public boolean empty() throws IOException {
-
-        int free_space = available_space();
-        if (free_space == (MAX_SPACE - DPHDR) * 8) {
-            return true;
-        }
-        return false;
-    }
-
-    public void updateCounter(Short value) throws IOException {
-        Convert.setShortValue(value, COUNTER, data);
-        Convert.setShortValue((short) (NUM_POSITIONS_AVAILABLE_IN_PAGE - value), FREE_SPACE, data);
-    }
-
-    /**
-     * Returns the byte array of the BMPage
-     * 
-     * @return byte array
+    /***
+     * getter for next page id
+     * @return
      * @throws IOException
      */
-
-    public byte[] getBMpageArray() throws Exception {
-        int dataLength = NUM_POSITIONS_AVAILABLE_IN_PAGE / 8;
-        byte[] bitMapPageData = new byte[dataLength];
-        for (int i = 0; i < dataLength; i++) {
-            bitMapPageData[i] = Convert.getByteValue(DPHDR + i, data);
-        }
-        return bitMapPageData;
+    public PageId getNextPage()
+            throws IOException {
+        nextPage.pid = Convert.getIntValue(NEXT_PAGE, data);
+        return nextPage;
     }
 
-    /**
-     * Compacts the data in a BMPage
-     * 
-     * @exception IOException I/O errors
+    /***
+     * setter for next page id
+     * @param pageNo
+     * @throws IOException
      */
-    public void writeBMPageArray(byte[] byteArray) throws IOException {
-
-        for (int i = 0; i < byteArray.length; i++) {
-            Convert.setByteValue(byteArray[i], DPHDR + i, data);
-        }
-
+    public void setNextPage(PageId pageNo)
+            throws IOException {
+        nextPage.pid = pageNo.pid;
+        Convert.setIntValue(nextPage.pid, NEXT_PAGE, data);
     }
 
+    /***
+     * getter for previous page id
+     * @return
+     * @throws IOException
+     */
+    public PageId getPrevPage()
+            throws IOException {
+        prevPage.pid = Convert.getIntValue(PREV_PAGE, data);
+        return prevPage;
+    }
+
+    /***
+     * setter for previous page id
+     * @param pageNo
+     * @throws IOException
+     */
+    public void setPrevPage(PageId pageNo)
+            throws IOException {
+        prevPage.pid = pageNo.pid;
+        Convert.setIntValue(prevPage.pid, PREV_PAGE, data);
+    }
+
+    /***
+     * returns the bitmap array portion of the BMPage
+     * @return
+     * @throws Exception
+     */
+    public byte[] getBMpageArray() throws Exception {
+        int numBytesInPage = NUM_POSITIONS_IN_A_PAGE /8;
+        byte[] bitMapArray = new byte[numBytesInPage];
+        for (int i = 0; i < numBytesInPage; i++) {
+            bitMapArray[i] = Convert.getByteValue(DPFIXED + i, data);
+        }
+        return bitMapArray;
+    }
+
+    /***
+     * Updates the bitmap portion of the BMPage
+     * @param givenData
+     * @throws Exception
+     */
+    void writeBMPageArray(byte[] givenData) throws Exception {
+        int count = givenData.length;
+        for (int i = 0; i < count; i++) {
+            Convert.setByteValue(givenData[i], DPFIXED + i, data);
+        }
+    }
 }

@@ -4,7 +4,9 @@ import global.PageId;
 
 import java.io.IOException;
 
-
+/**
+ * Created by dixith on 3/24/18.
+ */
 public class ColumnarDB extends DB {
 
     public  void read_page(PageId pageno, Page apage)

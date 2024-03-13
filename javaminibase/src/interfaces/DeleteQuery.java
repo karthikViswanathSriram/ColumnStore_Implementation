@@ -1,5 +1,6 @@
 package interfaces;
 
+
 import columnar.Columnarfile;
 import diskmgr.PCounter;
 import global.AttrType;
@@ -8,7 +9,7 @@ import global.SystemDefs;
 import heap.Tuple;
 import iterator.*;
 
-public class Delete {
+public class DeleteQuery {
 
     private static String FILESCAN = "FILE";
     private static String COLUMNSCAN = "COLUMN";
@@ -16,6 +17,9 @@ public class Delete {
     private static String BTREESCAN = "BTREE";
 
     public static void main(String args[]) throws Exception {
+        // Query Skeleton: COLUMNDB COLUMNFILE PROJECTION OTHERCONST SCANCOLS [SCANTYPE] [SCANCONST] TARGETCOLUMNS NUMBUF
+        // Example Query: testColumnDB columnarTable A,B,C "C = 5" A,B [BTREE,BITMAP] "(A = 5 v A = 6),(B > 7)" A,B,C 100
+        // In case no constraints need to be applied, pass "" as input.
         String columnDB = args[0];
         String columnarFile = args[1];
         String[] projection = args[2].split(",");
@@ -28,11 +32,10 @@ public class Delete {
         String purge = args[9];
         Integer sortmem = Integer.parseInt(args[10]);
 
-        String dbpath = utils.dbPath(columnDB);
+        String dbpath = InterfaceUtils.dbPath(columnDB);
         SystemDefs sysdef = new SystemDefs(dbpath, 0, bufferSize, "Clock");
 
-        runInterface(columnarFile, projection, otherConstraints, scanColumns, scanTypes, scanConstraints, targetColumns,
-                purge, sortmem);
+        runInterface(columnarFile, projection, otherConstraints, scanColumns, scanTypes, scanConstraints, targetColumns, purge, sortmem);
 
         SystemDefs.JavabaseBM.flushAllPages();
         SystemDefs.JavabaseDB.closeDB();
@@ -41,41 +44,38 @@ public class Delete {
         System.out.println("Writes: " + PCounter.wcounter);
     }
 
-    private static void runInterface(String columnarFile, String[] projection, String otherConstraints,
-            String[] scanColumns, String[] scanTypes, String[] scanConstraints, String[] targetColumns, String purge,
-            int sortmem) throws Exception {
+    private static void runInterface(String columnarFile, String[] projection, String otherConstraints, String[] scanColumns, String[] scanTypes, String[] scanConstraints, String[] targetColumns, String purge, int sortmem) throws Exception {
 
         Columnarfile cf = new Columnarfile(columnarFile);
 
         AttrType[] opAttr = new AttrType[projection.length];
         FldSpec[] projectionList = new FldSpec[projection.length];
         for (int i = 0; i < projection.length; i++) {
-            String attribute = utils.getAttributeName(projection[i]);
-            projectionList[i] = new FldSpec(new RelSpec(RelSpec.outer),
-                    utils.getColumnPositionInTargets(attribute, targetColumns) + 1);
-            opAttr[i] = new AttrType(cf.getAttrtypeforcolumn(cf.getColumnNumberFromColName(attribute)).attrType);
+            String attribute = InterfaceUtils.getAttributeName(projection[i]);
+            projectionList[i] = new FldSpec(new RelSpec(RelSpec.outer), InterfaceUtils.getColumnPositionInTargets(attribute, targetColumns) + 1);
+            opAttr[i] = new AttrType(cf.getAttrtypeforcolumn(cf.getAttributePosition(attribute)).attrType);
         }
 
         int[] scanCols = new int[scanColumns.length];
         for (int i = 0; i < scanColumns.length; i++) {
             if (!scanColumns[i].equals("")) {
-                String attribute = utils.getAttributeName(scanColumns[i]);
-                scanCols[i] = cf.getColumnNumberFromColName(attribute);
+                String attribute = InterfaceUtils.getAttributeName(scanColumns[i]);
+                scanCols[i] = cf.getAttributePosition(attribute);
             }
         }
 
         short[] targets = new short[targetColumns.length];
         for (int i = 0; i < targetColumns.length; i++) {
-            String attribute = utils.getAttributeName(targetColumns[i]);
-            targets[i] = (short) cf.getColumnNumberFromColName(attribute);
+            String attribute = InterfaceUtils.getAttributeName(targetColumns[i]);
+            targets[i] = (short) cf.getAttributePosition(attribute);
         }
 
-        CondExpr[] otherConstraint = utils.processRawConditionExpression(otherConstraints, targetColumns);
+        CondExpr[] otherConstraint = InterfaceUtils.processRawConditionExpression(otherConstraints, targetColumns);
 
         CondExpr[][] scanConstraint = new CondExpr[scanTypes.length][1];
 
         for (int i = 0; i < scanTypes.length; i++) {
-            scanConstraint[i] = utils.processRawConditionExpression(scanConstraints[i]);
+            scanConstraint[i] = InterfaceUtils.processRawConditionExpression(scanConstraints[i]);
         }
         cf.close();
         Iterator it = null;
@@ -96,8 +96,7 @@ public class Delete {
                 cfs.close();
             } else if (scanTypes[0].equals(COLUMNSCAN)) {
                 ColumnarColumnScan ccs;
-                ccs = new ColumnarColumnScan(columnarFile, scanCols[0], projectionList, targets, scanConstraint[0],
-                        otherConstraint);
+                ccs = new ColumnarColumnScan(columnarFile, scanCols[0], projectionList, targets, scanConstraint[0], otherConstraint);
                 Boolean deleted = true;
                 while (deleted) {
                     deleted = ccs.delete_next();
@@ -120,8 +119,7 @@ public class Delete {
                         throw new Exception("Scan type <" + scanTypes[i] + "> not recognized.");
                 }
                 ColumnarIndexScan cis;
-                cis = new ColumnarIndexScan(columnarFile, scanCols, indexType, scanConstraint, otherConstraint, false,
-                        targets, projectionList, sortmem);
+                cis = new ColumnarIndexScan(columnarFile, scanCols, indexType, scanConstraint, otherConstraint, false, targets, projectionList, sortmem);
                 Boolean deleted = true;
                 while (deleted) {
                     deleted = cis.delete_next();
@@ -137,7 +135,8 @@ public class Delete {
             } else
                 throw new Exception("Scan type <" + scanTypes[0] + "> not recognized.");
 
-            if (purge.equals("PURGE")) {
+
+            if(purge.equals("PURGE")){
                 cf.purgeAllDeletedTuples();
             }
             cf.close();
@@ -152,3 +151,4 @@ public class Delete {
         }
     }
 }
+

@@ -1,18 +1,10 @@
 package bitmap;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import btree.AddFileEntryException;
-import btree.DeleteFileEntryException;
-import btree.FreePageException;
-import btree.GetFileEntryException;
-import btree.PinPageException;
-import btree.UnpinPageException;
+import btree.*;
 import columnar.Columnarfile;
-import columnar.IntegerValue;
-import columnar.StringValue;
 import columnar.ValueClass;
+import columnar.ValueInt;
+import columnar.ValueString;
 import diskmgr.Page;
 import global.AttrType;
 import global.GlobalConst;
@@ -20,18 +12,21 @@ import global.PageId;
 import global.SystemDefs;
 import heap.HFBufMgrException;
 
-public class BitMapFile implements GlobalConst {
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
 
-    private BitMapHeaderPage bmHeaderPage;
-    private PageId bmHeaderPageId;
+public class BitMapFile implements GlobalConst {
+    private String fileName;
+    private BitMapHeaderPage headerPage;
+    private PageId headerPageId;
     private String columnarFileName;
     private Integer columnNumber;
     private AttrType attrType;
     private ValueClass value;
 
     /***
-     * Getter: columnNumber
-     * 
+     * Getter for columnNumber
      * @return
      */
     public Integer getColumnNumber() {
@@ -39,8 +34,7 @@ public class BitMapFile implements GlobalConst {
     }
 
     /***
-     * Setter: columnNumber
-     * 
+     * Setter got cokumnNumber
      * @param columnNumber
      */
     public void setColumnNumber(Integer columnNumber) {
@@ -48,8 +42,7 @@ public class BitMapFile implements GlobalConst {
     }
 
     /***
-     * Getter: value
-     * 
+     * Getter for value
      * @return
      */
     public ValueClass getValue() {
@@ -57,8 +50,7 @@ public class BitMapFile implements GlobalConst {
     }
 
     /***
-     * Setter: value
-     * 
+     * Setter for value
      * @param value
      */
     public void setValue(ValueClass value) {
@@ -66,215 +58,288 @@ public class BitMapFile implements GlobalConst {
     }
 
     /***
-     * Getter: columnarFileName
-     * 
+     * getter fine name
      * @return
      */
-    public String getColumnarFileName() {
-        return columnarFileName;
+    public String getFileName() {
+        return fileName;
     }
 
     /***
-     * Setter: columnarFileName
-     * 
+     * setter for file name
      * @param fileName
      */
-    public void setColumnarFileName(String fileName) {
-        this.columnarFileName = fileName;
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 
     /***
-     * Getter: bmHeaderPage
-     * 
-     * @return bmHeaderPage
+     * getter for header page
+     * @return
      */
     public BitMapHeaderPage getHeaderPage() {
-        return bmHeaderPage;
+        return headerPage;
     }
 
     /***
-     * Setter: bmHeaderPage
-     * 
-     * @param bmHeaderPage
+     * setter for header page
+     * @param headerPage
      */
-    public void setHeaderPage(BitMapHeaderPage bmHeaderPage) {
-        this.bmHeaderPage = bmHeaderPage;
+    public void setHeaderPage(BitMapHeaderPage headerPage) {
+        this.headerPage = headerPage;
     }
 
     /***
-     * Getter: bmHeaderPageId
-     * 
-     * @return bmHeaderPageId
+     * opens an existing bitmap index file
+     * @param fileName
+     * @throws Exception
      */
-    public PageId getHeaderPageId() {
-        return bmHeaderPageId;
-    }
-
-    public BitMapFile(String filename) throws Exception {
-        // Constructor for opening an existing BitMapFile with given filename
-
-        bmHeaderPageId = get_file_entry(filename);
-        if (bmHeaderPageId == null) {
-            throw new Exception("File does not exist");
+    public BitMapFile(String fileName) throws Exception {
+        this.fileName = fileName;
+        headerPageId = get_file_entry(fileName);
+        if (headerPageId == null) {
+            throw new Exception("This index file (" + fileName + ") doesn't exist");
         }
-        bmHeaderPage = new BitMapHeaderPage(bmHeaderPageId);
-        columnarFileName = bmHeaderPage.getColumnarFileName();
-        columnNumber = bmHeaderPage.getColumnNumber();
-        attrType = bmHeaderPage.getAttrType();
+        headerPage = new BitMapHeaderPage(headerPageId);
 
-        /*
-         * Check on lalit's part and change this. And where are we converting string to
-         * integer
-         */
+        columnarFileName = headerPage.getColumnarFileName();
+        columnNumber = headerPage.getColumnNumber();
+        attrType = headerPage.getAttrType();
         if (attrType.attrType == AttrType.attrString) {
-            value = new StringValue(bmHeaderPage.getValue());
+            value = new ValueString(headerPage.getValue());
         } else {
-            value = new IntegerValue(Integer.parseInt(bmHeaderPage.getValue()));
+            value = new ValueInt(Integer.parseInt(headerPage.getValue()));
         }
-
     }
 
-    public BitMapFile(String filename, Columnarfile columnarFile, Integer columnNo, ValueClass value)
-            throws Exception {
-        // Constructor for creating a new BitMapFile with given filename
-        bmHeaderPageId = get_file_entry(filename);
-        if (bmHeaderPageId != null) {
-            bmHeaderPage = new BitMapHeaderPage(bmHeaderPageId);
-            return;
-        }
-        bmHeaderPage = new BitMapHeaderPage();
-        bmHeaderPageId = bmHeaderPage.getPageId();
-        add_file_entry(filename, bmHeaderPageId);
-        bmHeaderPage.set_rootId(new PageId(INVALID_PAGE));
-        bmHeaderPage.setColumnarFileName(columnarFile.get_ColumnarFile_name());
-        bmHeaderPage.setColumnNumber(columnNo);
-        bmHeaderPage.setAttrType(attrType);
-
-        if (value instanceof IntegerValue) {
-            bmHeaderPage.setValue(((IntegerValue) value).getValue().toString());
+    /***
+     * creates a new bitmap file
+     * @param filename
+     * @param columnarFile
+     * @param columnNo
+     * @param value
+     * @throws Exception
+     */
+    public BitMapFile(String filename, Columnarfile columnarFile, Integer columnNo, ValueClass value) throws Exception {
+        headerPageId = get_file_entry(filename);
+        if (headerPageId == null) //file does not exist
+        {
+            headerPage = new BitMapHeaderPage();
+            headerPageId = headerPage.getPageId();
+            add_file_entry(filename, headerPageId);
+            headerPage.set_rootId(new PageId(INVALID_PAGE));
+            headerPage.setColumnarFileName(columnarFile.getColumnarFileName());
+            headerPage.setColumnNumber(columnNo);
+            if (value instanceof ValueInt) {
+                headerPage.setValue(value.getValue().toString());
+                headerPage.setAttrType(new AttrType(AttrType.attrInteger));
+            } else {
+                headerPage.setValue(value.getValue().toString());
+                headerPage.setAttrType(new AttrType(AttrType.attrString));
+            }
         } else {
-            bmHeaderPage.setValue(((StringValue) value).getValue());
+            headerPage = new BitMapHeaderPage(headerPageId);
         }
-
     }
 
-    public boolean Insert(int position) throws Exception {
-        setBitAtPosition(true, position);
-        return true;
+    /***
+     * closes the bitmap file
+     * @throws Exception
+     */
+    public void close() throws Exception {
+        if (headerPage != null) {
+            SystemDefs.JavabaseBM.unpinPage(headerPageId, true);
+            headerPage = null;
+        }
     }
 
-    public boolean Delete(int position) throws Exception {
-        setBitAtPosition(false, position);
-        return true;
+    /***
+     * closes the bitmap file
+     * @throws Exception
+     */
+    public void scanClose() throws Exception {
+        if (headerPage != null) {
+            SystemDefs.JavabaseBM.unpinPage(headerPageId, false);
+            headerPage = null;
+        }
     }
 
-    public void destroyBitMapFile() throws Exception, DeleteFileEntryException {
-        if (bmHeaderPage != null) {
-            PageId pgId = bmHeaderPage.get_rootId();
+    /***
+     * delete all the bitmap related data
+     * @throws Exception
+     */
+    public void destroyBitMapFile() throws Exception {
+        if (headerPage != null) {
+            PageId pgId = headerPage.get_rootId();
             BMPage bmPage = new BMPage();
             while (pgId.pid != INVALID_PAGE) {
-                try {
-                    Page page = pinPage(pgId);
-                    bmPage.openBMpage(page);
-                    pgId = bmPage.getNextPage();
-                    unpinPage(pgId);
-                    freePage(pgId);
-                } catch (PinPageException e) {
-                    e.printStackTrace();
-                    throw new RuntimeException("Error pinning page: " + e.getMessage());
-                }
+                Page page = pinPage(pgId);
+                bmPage.openBMpage(page);
+                pgId = bmPage.getNextPage();
+                unpinPage(pgId);
+                freePage(pgId);
             }
-            unpinPage(bmHeaderPageId);
-            freePage(bmHeaderPageId);
-            /* Delete the file entry */
-            try {
-                delete_file_entry(columnarFileName);
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new DeleteFileEntryException(e, "");
-            }
-
-            bmHeaderPage = null;
-        }
-    }
-
-    public void close() throws Exception {
-        // Close the BitMapFile
-        if (bmHeaderPage != null) {
-            SystemDefs.JavabaseBM.unpinPage(bmHeaderPageId, true);
-            bmHeaderPage = null;
-        }
-    }
-
-    public void scanClose() throws Exception {
-        if (bmHeaderPage != null) {
-            SystemDefs.JavabaseBM.unpinPage(bmHeaderPageId, false);
-            bmHeaderPage = null;
+            unpinPage(headerPageId);
+            freePage(headerPageId);
+            delete_file_entry(fileName);
+            headerPage = null;
         }
     }
 
     /***
      * Update the bitmap value at the position specified.
-     * 
      * @param set
      * @param position
      * @throws Exception
      */
-    private void setBitAtPosition(boolean set, int position) throws Exception {
-        List<PageId> pagesPinned = new ArrayList<>();
-        if (bmHeaderPage == null) {
+    private void setValueAtPosition(boolean set, int position) throws Exception {
+        List<PageId> pinnedPages = new ArrayList<>();
+        if (headerPage == null) {
             throw new Exception("Bitmap header page is null");
         }
-        if (bmHeaderPage.get_rootId().pid != INVALID_PAGE) {
-            int pc;
-
-            for (pc = 1; position >= BMPage.NUM_POSITIONS_AVAILABLE_IN_PAGE; pc++) {
-                // pageCounter++;
-                position -= BMPage.NUM_POSITIONS_AVAILABLE_IN_PAGE;
+        if (headerPage.get_rootId().pid != INVALID_PAGE) {
+            int pageCounter = 1;
+            while (position >= BMPage.NUM_POSITIONS_IN_A_PAGE) {
+                pageCounter++;
+                position -= BMPage.NUM_POSITIONS_IN_A_PAGE;
             }
-            PageId bmPageId = bmHeaderPage.get_rootId();
+            PageId bmPageId = headerPage.get_rootId();
             Page page = pinPage(bmPageId);
-            pagesPinned.add(bmPageId);
+            pinnedPages.add(bmPageId);
             BMPage bmPage = new BMPage(page);
-            int i = 1;
-            while (i < pc) {
+            for (int i = 1; i < pageCounter; i++) {
                 bmPageId = bmPage.getNextPage();
                 if (bmPageId.pid == BMPage.INVALID_PAGE) {
                     PageId newPageId = getNewBMPage(bmPage.getCurPage());
-                    pagesPinned.add(newPageId);
+                    pinnedPages.add(newPageId);
                     bmPage.setNextPage(newPageId);
                     bmPageId = newPageId;
                 }
                 page = pinPage(bmPageId);
                 bmPage = new BMPage(page);
-                i++;
             }
-            byte[] data = bmPage.getBMpageArray();
-            int bitPosition = position % 8;
-            int bytePosition = position / 8;
-
-            if (set == true) {
-                data[bytePosition] |= (1 << bitPosition);
-            } else {
-                data[bytePosition] &= ~(1 << bitPosition);
-            }
-            bmPage.writeBMPageArray(data);
-            int nValues = position + 1;
-
-            if (bmPage.getCounter() < nValues) {
-                bmPage.updateCounter((short) (nValues));
+            byte[] currData = bmPage.getBMpageArray();
+            int bytoPos = position/8;
+            int bitPos = position%8;
+            if(set)
+                currData[bytoPos] |= (1<<bitPos);
+            else
+                currData[bytoPos] &= ~(1<<bitPos);
+            bmPage.writeBMPageArray(currData);
+            if (bmPage.getCounter() < position + 1) {
+                bmPage.updateCounter((short) (position + 1));
             }
         } else {
-            PageId newPageId = getNewBMPage(bmHeaderPageId);
-            pagesPinned.add(newPageId);
-            bmHeaderPage.set_rootId(newPageId);
-            setBitAtPosition(set, position);
+            PageId newPageId = getNewBMPage(headerPageId);
+            pinnedPages.add(newPageId);
+            headerPage.set_rootId(newPageId);
+            setValueAtPosition(set, position);
         }
-        for (PageId pagePinned : pagesPinned) {
-            unpinPage(pagePinned, true);
+        for (PageId pinnedPage : pinnedPages) {
+            unpinPage(pinnedPage, true);
         }
     }
 
+    /***
+     * delete bit at the posiition and re-organise the bitmap
+     * @param position
+     * @return
+     * @throws Exception
+     */
+    public Boolean fullDelete(int position) throws Exception {
+        if (headerPage == null) {
+            throw new Exception("Bitmap header page is null");
+        }
+        List<PageId> pinnedPages = new ArrayList<>();
+        if (headerPage.get_rootId().pid != INVALID_PAGE) {
+            int pageCounter = 1;
+            while (position >= BMPage.NUM_POSITIONS_IN_A_PAGE) {
+                pageCounter++;
+                position -= BMPage.NUM_POSITIONS_IN_A_PAGE;
+            }
+            PageId bmPageId = headerPage.get_rootId();
+            Page page = pinPage(bmPageId);
+            pinnedPages.add(bmPageId);
+            BMPage bmPage = new BMPage(page);
+            for (int i = 1; i < pageCounter; i++) {
+                bmPageId = bmPage.getNextPage();
+                page = pinPage(bmPageId);
+                bmPage = new BMPage(page);
+            }
+            BitSet bitSet = BitSet.valueOf(bmPage.getBMpageArray());
+            boolean lastBit = _fullDelete(bmPage.getNextPage());
+            while (position < bitSet.length()) {
+                int position1 = bitSet.nextSetBit(position);
+                bitSet.clear(position1);
+                bitSet.clear(position, position1);
+                bitSet.set(position1-1);
+                position = position1;
+            }
+            if(lastBit)
+                bitSet.set(bitSet.length()-1);
+            bmPage.writeBMPageArray(bitSet.toByteArray());
+            for (PageId pinnedPage : pinnedPages) {
+                unpinPage(pinnedPage, true);
+            }
+        }
+        return Boolean.TRUE;
+    }
+
+    /***
+     * delete bit at the posiition and re-organise the bitmap
+     * @param pageId
+     * @return
+     */
+    private boolean _fullDelete(PageId pageId){
+        if(pageId.pid == INVALID_PAGE)
+            return false;
+
+        try {
+            Page page = pinPage(pageId);
+            BMPage bmPage = new BMPage(page);
+            BitSet bitSet = BitSet.valueOf(bmPage.getBMpageArray());
+            boolean firstBit = bitSet.get(0);
+            bitSet = bitSet.get(1, bitSet.length());
+            boolean lastBit = _fullDelete(bmPage.getNextPage());
+            if(lastBit)
+                bitSet.set(bitSet.length()-1);
+            bmPage.writeBMPageArray(bitSet.toByteArray());
+            return firstBit;
+        } catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+
+    }
+
+    /***
+     * mark postion with value 0
+     * @param position
+     * @return
+     * @throws Exception
+     */
+    public Boolean delete(int position) throws Exception {
+        setValueAtPosition(false, position);
+        return Boolean.TRUE;
+    }
+
+    /***
+     * mark postion with value 1
+     * @param position
+     * @return
+     * @throws Exception
+     */
+    public Boolean insert(int position) throws Exception {
+        setValueAtPosition(true, position);
+        return Boolean.TRUE;
+    }
+
+    /***
+     * Allocate new BMPage to the doubly linked list
+     * @param prevPageId
+     * @return
+     * @throws Exception
+     */
     private PageId getNewBMPage(PageId prevPageId) throws Exception {
         Page apage = new Page();
         PageId pageId = newPage(apage, 1);
@@ -285,6 +350,12 @@ public class BitMapFile implements GlobalConst {
         return pageId;
     }
 
+    /***
+     * Get file entry from DB
+     * @param filename
+     * @return
+     * @throws GetFileEntryException
+     */
     private PageId get_file_entry(String filename)
             throws GetFileEntryException {
         try {
@@ -295,6 +366,12 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /***
+     * Add file entry to the DB
+     * @param fileName
+     * @param pageno
+     * @throws AddFileEntryException
+     */
     private void add_file_entry(String fileName, PageId pageno)
             throws AddFileEntryException {
         try {
@@ -305,6 +382,11 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /***
+     * delete file entry from DB
+     * @param filename
+     * @throws DeleteFileEntryException
+     */
     private void delete_file_entry(String filename)
             throws DeleteFileEntryException {
         try {
@@ -315,18 +397,20 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
-    private Page pinPage(PageId pageno)
-            throws PinPageException {
-        try {
-            Page page = new Page();
-            SystemDefs.JavabaseBM.pinPage(pageno, page, false/* Rdisk */);
-            return page;
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new PinPageException(e, "");
-        }
+    /**
+     *
+     * @return scan object
+     * @throws Exception
+     */
+    public BitmapFileScan new_scan() throws Exception {
+        return new BitmapFileScan(this);
     }
 
+    /***
+     * Unpin pagefrom buffer
+     * @param pageno
+     * @throws UnpinPageException
+     */
     private void unpinPage(PageId pageno)
             throws UnpinPageException {
         try {
@@ -337,6 +421,12 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /***
+     * Unpin pagefrom buffer
+     * @param pageno
+     * @param dirty
+     * @throws UnpinPageException
+     */
     private void unpinPage(PageId pageno, boolean dirty)
             throws UnpinPageException {
         try {
@@ -347,6 +437,11 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    /***
+     * free page passed as input
+     * @param pageno
+     * @throws FreePageException
+     */
     private void freePage(PageId pageno)
             throws FreePageException {
         try {
@@ -358,6 +453,31 @@ public class BitMapFile implements GlobalConst {
 
     }
 
+    /***
+     * pin page passed as input
+     * @param pageno
+     * @return
+     * @throws PinPageException
+     */
+    private Page pinPage(PageId pageno)
+            throws PinPageException {
+        try {
+            Page page = new Page();
+            SystemDefs.JavabaseBM.pinPage(pageno, page, false/*Rdisk*/);
+            return page;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new PinPageException(e, "");
+        }
+    }
+
+    /***
+     * Allocate new page
+     * @param page
+     * @param num
+     * @return
+     * @throws HFBufMgrException
+     */
     private PageId newPage(Page page, int num)
             throws HFBufMgrException {
 
@@ -371,14 +491,9 @@ public class BitMapFile implements GlobalConst {
 
         return tmpId;
 
-    }
+    } // end of newPage
 
-    /**
-     *
-     * @return scan object
-     * @throws Exception
-     */
-    public BitmapFileScan new_scan() throws Exception {
-        return new BitmapFileScan(this);
+    public PageId getHeaderPageId() {
+        return headerPageId;
     }
 }

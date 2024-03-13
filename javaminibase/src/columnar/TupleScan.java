@@ -1,120 +1,141 @@
 package columnar;
 
-import java.io.IOException;
-import java.util.Arrays;
-
-import global.*;
+import global.AttrType;
+import global.RID;
 import heap.InvalidTupleSizeException;
 import heap.Scan;
 import heap.Tuple;
 
-public class TupleScan implements GlobalConst {
-    private Columnarfile cf;
-    private int ncols;
-    AttrType[] attrTypes;
-    short[] str_attr_sizes;
-    short str_size = 25;
-    Scan[] sc;
-    int tuplesize;
+import java.io.IOException;
 
-    public TupleScan(Columnarfile f) throws InvalidTupleSizeException, IOException {
-        cf = f;
-        ncols = f.get_numcols();
-        sc = new Scan[ncols];
-        for (int i = 1; i < ncols + 1; i++) {
-            sc[i - 1] = f.get_HF(i).openScan();
-        }
-        attrTypes = f.get_AttrTypes();
-        int str_attr_count = 0;
-        tuplesize = 2 * (ncols) + 2;
-        for (int i = 0; i < ncols; i++) {
-        if (attrTypes[i].attrType == AttrType.attrString) {
-            str_attr_count++;
-            tuplesize += str_size;
-        }
-        else
-            tuplesize += 4;
-        }
-        str_attr_sizes = new short[str_attr_count];
-        Arrays.fill(str_attr_sizes, str_size);
-    }
-        
+public class TupleScan {
+    private Columnarfile file;
+	Scan[] sc;
+
+	private AttrType[] atype = null;
+	private short[] asize = null;
+	private short[] strSize = null;
+	private short numColumns;
+	private int toffset;
+	private int tuplesize;
 
     /**
-    * This constructor truly takes advantage of columnar organization by scanning only
-    * required columns.
-    *
-    * @param f Columnarfile object
-    * @param columns array of column numbers that need to be scanned
-    * @throws InvalidTupleSizeException
-    * @throws IOException
-    */
+     * Initiates scan on all columns
+     *
+     * @param f Columnarfile object
+     * @throws InvalidTupleSizeException
+     * @throws IOException
+     */
+	public TupleScan(Columnarfile f) throws Exception {
+        file = f;
+        numColumns = f.numColumns;
+        atype = f.atype;
+        asize = f.asize;
+        strSize = f.getStrSize();
+        toffset = f.getOffset();
+        tuplesize = f.getTupleSize();
+        sc=new Scan[numColumns];
+        for(int i=0;i<numColumns;i++){
+            sc[i] = f.getColumn(i).openScan();
+        }
+    }
+
+    /**
+     * This constructor truly takes advantage of columnar organization by scanning only
+     * required columns.
+     *
+     * @param f Columnarfile object
+     * @param columns array of column numbers that need to be scanned
+     * @throws InvalidTupleSizeException
+     * @throws IOException
+     */
     public TupleScan(Columnarfile f,short[] columns) throws Exception {
-        cf = f;
-        ncols = (short)columns.length;
-        attrTypes = new AttrType[ncols];
-        sc=new Scan[ncols];
+        file = f;
+        numColumns = (short)columns.length;
+        atype = new AttrType[numColumns];
+        asize = new short[numColumns];
+        sc=new Scan[numColumns];
         short strCnt = 0;
-        tuplesize = 2 * (ncols) + 2;
-        for(int i=0;i<ncols;i++){
-        
-        
-        short c = columns[i];
-        attrTypes[i] = f.type[c];
-        sc[i] = f.getColumn(c).openScan();
-        
-        
-        if(attrTypes[i].attrType == AttrType.attrString){
-        tuplesize += str_size;
-        strCnt++;
-        }
-        else
-        tuplesize += 4;
-        }
-        
-        
-        str_attr_sizes = new short[strCnt];
-        Arrays.fill(str_attr_sizes, str_size);
-    }
-    
+        for(int i=0;i<numColumns;i++){
 
-    public void closetuplescan() {
-        for (int i = 0; i < ncols; i++) {
-            sc[i].closescan();
+            short c = columns[i];
+            atype[i] = f.atype[c];
+            asize[i] = f.asize[c];
+            sc[i] = f.getColumn(c).openScan();
+
+            if(atype[i].attrType == AttrType.attrString)
+                strCnt++;
+        }
+
+        strSize = new short[strCnt];
+        toffset = 4 + (numColumns * 2);
+        tuplesize = toffset;
+        int cnt = 0;
+        for(int i = 0; i < numColumns; i++){
+            short c = columns[i];
+            if(atype[i].attrType == AttrType.attrString) {
+                strSize[cnt++] = f.attrsizes[c];
+            }
+            tuplesize += asize[i];
         }
     }
+	public void closetuplescan(){
+		for(int i=0;i<sc.length;i++){
+			sc[i].closescan();
+		}
+        file.close();
+	}
+	public Tuple getNext(TID tid) throws Exception {
 
-    public Tuple getNext(TID tid) throws Exception {
-        Tuple tpl = new Tuple(tuplesize);
-        tpl.setHdr((short) ncols, attrTypes, str_attr_sizes);
-        RID[] rids = new RID[ncols];
-        byte[] data = tpl.getTupleByteArray();
-        int offset = 2 * (ncols) + 2;;
+        Tuple result = new Tuple(tuplesize);
+        result.setHdr(numColumns, atype, strSize);
+        byte[] data = result.getTupleByteArray();
+        RID[] rids = new RID[sc.length];
+        RID rid = new RID();
         int position = 0;
-        for (int i = 0; i < ncols; i++) {
-            RID rid = new RID();
-            Tuple temp = sc[i].getNext(rid);
-            if (temp == null)
+        boolean canContinue;
+        int offset = toffset;
+        for (int i = 0; i < numColumns; i++) {
+            Tuple t = sc[i].getNext(rid);
+            if (t == null)
                 return null;
+
+            rids[i] = new RID();
             rids[i].copyRid(rid);
-            System.arraycopy(temp.getTupleByteArray(), 0, data, offset, cf.get_attr_size(i));
-            offset += cf.get_attr_size(i);
+            rid = new RID();
+            int size = asize[i];
+            System.arraycopy(t.getTupleByteArray(), 0, data, offset, size);
+            offset += asize[i];
+            if(i+1 == numColumns)
+                position = sc[i].positionOfRecord(rids[i]);
         }
-        position = sc[0].positionOfRecord(rids[0]);
-        tid.numRIDs = ncols;
+
+        tid.numRIDs = sc.length;
         tid.recordIDs = rids;
         tid.setPosition(position);
-        tpl.tupleInit(data, 0, offset);
-        return tpl;
-    }
+        result.tupleInit(data, 0, data.length);
 
-    public boolean position(TID tid) throws InvalidTupleSizeException, IOException {
-        for (int i = 0; i < tid.numRIDs; i++) {
-            boolean flag = sc[i].position(tid.recordIDs[i]);
-            if (!flag)
-                return false;
-        }
-        return true;
+        return result;
+
     }
+	public boolean position(TID tidarg){
+		RID[] ridstemp=new RID[tidarg.numRIDs];
+		for(int i=0;i<tidarg.numRIDs;i++){
+			ridstemp[i].copyRid(tidarg.recordIDs[i]);
+			try {
+				boolean ret=sc[i].position(ridstemp[i]);
+				if(ret==false){
+					return false;
+				}
+			} catch (InvalidTupleSizeException e) {
+
+				e.printStackTrace();
+			} catch (IOException e) {
+
+				e.printStackTrace();
+			}
+		}
+		return true;
+	}
 
 }

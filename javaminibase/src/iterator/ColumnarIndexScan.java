@@ -11,6 +11,7 @@ import columnar.ValueClass;
 import diskmgr.Page;
 import global.*;
 import heap.*;
+import index.ColumnarBTreeScan;
 import index.ColumnarBitmapScan;
 import index.UnknownIndexTypeException;
 import iterator.*;
@@ -21,7 +22,11 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Set;
-import index.ColumnarBTreeScan;
+
+
+/**
+ * Created by dixith on 3/18/18.
+ */
 
 public class ColumnarIndexScan extends Iterator{
 
@@ -104,8 +109,7 @@ public class ColumnarIndexScan extends Iterator{
                 tTuple = new Tuple(tTuple.size());
                 tTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
                 for (int i = 0; i < targetHeapFiles.length; i++) {
-                    RID rid = targetHeapFiles[i].recordAtPosition(position);
-                    Tuple record = targetHeapFiles[i].getRecord(rid);
+                    Tuple record = targetHeapFiles[i].getRecord(position);
                     switch (targetAttrTypes[i].attrType) {
                         case AttrType.attrInteger:
                             // Assumed that col heap page will have only one entry

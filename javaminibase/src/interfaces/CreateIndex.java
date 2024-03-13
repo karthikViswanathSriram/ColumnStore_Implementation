@@ -16,7 +16,7 @@ public class CreateIndex {
         String columnName = args[2];
         String indexType = args[3];
 
-        String dbpath = utils.dbPath(columnDB);
+        String dbpath = InterfaceUtils.dbPath(columnDB);
         SystemDefs sysdef = new SystemDefs(dbpath, 0, NUMBUF, "Clock");
 
         runInterface(columnarFile, columnName, indexType);
@@ -31,15 +31,15 @@ public class CreateIndex {
     private static void runInterface(String columnarFile, String columnName, String indexType) throws Exception {
 
         Columnarfile cf = new Columnarfile(columnarFile);
-        int colno = cf.getColumnNumberFromColName(columnName);
+        int colno = cf.getAttributePosition(columnName);
 
         if (indexType.equals("BITMAP")) {
-            cf.createBMIndexForAllValuesInColumn(colno);
+            cf.createAllBitMapIndexForColumn(colno);
         } else {
             cf.createBTreeIndex(colno);
         }
         cf.close();
 
-        System.out.println(indexType + " created successfully on " + columnarFile + "." + columnName);
+        System.out.println(indexType + " created successfully on "+columnarFile+"."+columnName);
     }
 }

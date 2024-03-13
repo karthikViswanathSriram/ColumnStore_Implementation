@@ -9,7 +9,7 @@ import iterator.*;
 
 import java.io.IOException;
 
-public class ColumnarBTreeScan extends Iterator implements GlobalConst {
+public class ColumnarBTreeScan extends Iterator implements GlobalConst{
 
     private String indName;
     private Columnarfile columnarfile;
@@ -18,16 +18,16 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst {
     private CondExpr[] _selects;
     private boolean index_only;
 
-    public ColumnarBTreeScan(Columnarfile cf,
-            int columnNo,
-            CondExpr[] selects,
-            boolean indexOnly) throws IndexException {
+    public ColumnarBTreeScan (Columnarfile cf,
+                              int columnNo,
+                              CondExpr[] selects,
+                              boolean indexOnly) throws IndexException {
         _selects = selects;
         index_only = indexOnly;
         try {
 
             columnarfile = cf;
-            indName = columnarfile.generateBTName(columnNo);
+            indName = columnarfile.getBTName(columnNo);
         } catch (Exception e) {
             e.printStackTrace();
             return;
@@ -70,7 +70,7 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst {
                 AttrType[] type = new AttrType[1];
                 type[0] = new AttrType(AttrType.attrInteger);
                 short[] sizes = new short[0];
-                JTuple.setHdr((short) 1, type, sizes);
+                JTuple.setHdr((short)1, type, sizes);
                 JTuple.setIntFld(1, position);
                 return JTuple;
 
@@ -114,6 +114,7 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst {
             throw new IndexException(e, "IndexScan.java: getRecord failed");
         }
     }
+
 
     public void close() throws IOException, JoinsException, SortException, IndexException, HFBufMgrException {
         if (!closeFlag) {

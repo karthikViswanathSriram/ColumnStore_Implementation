@@ -1,7 +1,7 @@
 package columnar;
 
-import global.*;
-import java.io.*;
+import global.Convert;
+import global.RID;
 
 public class TID {
     int numRIDs;
@@ -9,74 +9,66 @@ public class TID {
     RID[] recordIDs;
 
     public TID(){}
-
-    public TID(int numRIDs) {
-        this.numRIDs = numRIDs;
-        this.position = 1;
-        this.recordIDs = new RID[numRIDs];
-        for (int i = 0; i < numRIDs; i++) {
-            this.recordIDs[i] = new RID(); // Assuming RID has a default constructor
+    public TID(int n){
+        this.numRIDs = n;
+    }
+    public TID(int n, int p){
+        this(n);
+        this.position = p;
+    }
+    public TID(int n, int p, RID[] rids){
+        this(n, p);
+        recordIDs = new RID[n];
+        for(int i=0;i<rids.length;i++){
+            recordIDs[i] = new RID();
+            recordIDs[i].copyRid(rids[i]);
         }
     }
 
-    public TID(int numRIDs, int position) {
-        this.numRIDs = numRIDs;
-        this.position = position;
-        this.recordIDs = new RID[numRIDs];
-        for (int i = 0; i < numRIDs; i++) {
-            this.recordIDs[i] = new RID(); // Assuming RID has a default constructor
-        }
-    }
+    public void copyTid(TID tid){
 
-    public TID(int numRIDs, int position, RID[] recordIDs) {
-        this.numRIDs = numRIDs;
-        this.position = position;
-        this.recordIDs = recordIDs;
-    }
-
-    public void copyTid(TID tid) {
         numRIDs = tid.numRIDs;
         position = tid.position;
-        recordIDs = tid.recordIDs;
+        recordIDs = new RID[numRIDs];
+        for(int i = 0; i< numRIDs; i++){
+            recordIDs[i].copyRid(tid.recordIDs[i]);
+        }
     }
 
-    public boolean equals(TID tid) {
-        if (numRIDs == tid.numRIDs) {
-            return false;
-        }
-        if (position == tid.position) {
-            return false;
-        }
-        for (int i = 0; i < recordIDs.length; i++) {
-            if (!recordIDs[i].equals(tid.recordIDs[i])) {
-                return false;
-            }
+    public boolean equals(TID tid){
+
+        if(numRIDs != tid.numRIDs) return false;
+        if(position != tid.position) return false;
+        for(int i = 0; i< numRIDs; i++){
+            if(!recordIDs[i].equals(tid.recordIDs[i])) return false;
         }
         return true;
     }
 
-    public void writeToByteArray(byte[] array, int offset) throws java.io.IOException {
-        Convert.setIntValue(numRIDs, offset, array);
-        Convert.setIntValue(position, offset + 4, array);
-        for (int i = 0; i < recordIDs.length; i++) {
-            recordIDs[i].writeToByteArray(array, offset + 8 + i * 8);
+    public void writeToByteArray(byte[] array, int offset)throws java.io.IOException
+    {
+        Convert.setIntValue ( numRIDs, offset, array);
+        Convert.setIntValue ( position, offset+4, array);
+
+        for(int i = 0; i< numRIDs; i++){
+            offset = offset + 8;
+            recordIDs[i].writeToByteArray(array, offset);
         }
     }
 
-    public void setPosition(int position) {
-        this.position = position;
+    public void setPosition(int position){
+
+        this.position = position; //is this it? not sure
     }
 
-    public int getPosition()
-    {
-        return this.position;
+    public void setRID(int column, RID recordID){
+
+        if(column < numRIDs){
+            recordIDs[column].copyRid(recordID);
+        }
     }
 
-    public void setRID(int column, RID recordID) throws Exception {
-        if (column < numRIDs)
-            this.recordIDs[column] = recordID;
-        else
-            throw new Exception("column passed exceeds number of columns in database");
+    public int getPosition() {
+        return position;
     }
-
 }

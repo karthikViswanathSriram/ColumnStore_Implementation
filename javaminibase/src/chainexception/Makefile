@@ -1,5 +1,5 @@
-JDKPATH = /usr
-LIBPATH = /afs/asu.edu/users/r/g/a/rganes11/minjava/javaminibase
+JDKPATH = /usr/lib/jvm/java-8-openjdk-amd64
+LIBPATH = /home/ejaz/CSE510/minjava/javaminibase/src/lib
 CLASSPATH = $(JDKPATH)/lib/classes.zip:.:..:$(LIBPATH)
 BINPATH = $(JDKPATH)/bin
 JAVAC = $(JDKPATH)/bin/javac -classpath $(CLASSPATH)
