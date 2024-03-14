@@ -32,10 +32,7 @@ public class ColumnarFileScan extends Iterator{
      * @throws TupleUtilsException exception from this class
      * @throws InvalidRelation     invalid relation
      */
-    public ColumnarFileScan(java.lang.String file_name,
-                     FldSpec[] proj_list,
-                     short[] targetedCols,
-                     CondExpr[] outFilter) throws FileScanException, TupleUtilsException, IOException, InvalidRelation {
+    public ColumnarFileScan(java.lang.String file_name, FldSpec[] proj_list, short[] targetedCols, CondExpr[] outFilter) throws FileScanException, TupleUtilsException, IOException, InvalidRelation {
 
         OutputFilter = outFilter;
         perm_mat = proj_list;

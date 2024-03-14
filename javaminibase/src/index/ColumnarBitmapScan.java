@@ -16,43 +16,36 @@ import java.util.BitSet;
 import java.util.List;
 
 public class ColumnarBitmapScan extends Iterator implements GlobalConst{
+    private CondExpr[] conditions;
+    private boolean index_only;
+    private int columnNo;
 
-    private List<BitmapFileScan> scans;
-    private Columnarfile columnarfile;
+    private List<BitmapFileScan> bmScans;
+    private Columnarfile cf;
     private BitSet bitMaps;
     private int counter = 0;
     private int scanCounter = 0;
 
-    private CondExpr[] _selects;
-    private boolean index_only;
-    private int _columnNo;
+    public ColumnarBitmapScan(Columnarfile cf, int columnNo, CondExpr[] conditions, boolean indexOnly) throws IndexException {
 
-    public ColumnarBitmapScan(Columnarfile cf,
-                              int columnNo,
-                              CondExpr[] selects,
-                              boolean indexOnly
-    ) throws IndexException {
-
-        _selects = selects;
-        index_only = indexOnly;
-        _columnNo = columnNo;
+        this.conditions = conditions;
+        this.index_only = indexOnly;
+        this.columnNo = columnNo;
         try {
-
-            columnarfile = cf;
+            this.cf = cf;
         } catch (Exception e) {
             e.printStackTrace();
             return;
         }
 
         try {
-            scans = new ArrayList<>();
-            for (String bmName : columnarfile.getAvailableBM(columnNo)){
+            bmScans = new ArrayList<>();
+            for (String bmName : cf.getAvailableBM(columnNo)){
                 if(evalBMName(bmName)){
-                    scans.add((new BitMapFile(bmName)).new_scan());
+                    bmScans.add((new BitMapFile(bmName)).new_scan());
                 }
             }
         } catch (Exception e) {
-            // any exception is swalled into a Index Exception
             throw new IndexException(e, "IndexScan.java: BitMapFile exceptions caught from BitMapFile constructor");
         }
     }
@@ -71,18 +64,16 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
         int position = 0;
         while (position != -1) {
             try {
-
                 position = get_next_position();
                 if (position < 0)
                     return null;
-                // tuple that needs to sent
-                Tuple JTuple = new Tuple(10);
+                Tuple t = new Tuple(10);
                 AttrType[] type = new AttrType[1];
                 type[0] = new AttrType(AttrType.attrInteger);
                 short[] sizes = new short[0];
-                JTuple.setHdr((short)1, type, sizes);
-                JTuple.setIntFld(1, position);
-                return JTuple;
+                t.setHdr((short)1, type, sizes);
+                t.setIntFld(1, position);
+                return t;
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -96,7 +87,7 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
         if(position < 0)
             return false;
 
-        return columnarfile.markTupleDeleted(position);
+        return cf.markTupleDeleted(position);
     }
 
     public int get_next_position(){
@@ -104,7 +95,7 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
 
             if (scanCounter == 0 || scanCounter > counter) {
                 bitMaps = new BitSet();
-                for(BitmapFileScan s : scans){
+                for(BitmapFileScan s : bmScans){
                     counter = s.counter;
                     BitSet bs = s.get_next_bitmap();
                     if(bs == null) {
@@ -134,35 +125,35 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
     public void close() throws Exception {
         if (!closeFlag) {
             closeFlag = true;
-            for(BitmapFileScan s : scans){
+            for(BitmapFileScan s : bmScans){
                 s.close();
             }
         }
     }
 
     boolean evalBMName(String s) throws Exception {
-        if(_selects == null)
+        if(this.conditions == null)
             return true;
 
-        short[] _sizes = new short[1];
-        _sizes[0] = columnarfile.getAttrsizeforcolumn(_columnNo);
-        AttrType[] _types = new AttrType[1];
-        _types[0] = columnarfile.getAttrtypeforcolumn(_columnNo);
+        short[] attrSizes = new short[1];
+        attrSizes[0] = cf.getAttrsizeforcolumn(columnNo);
+        AttrType[] attrTypes = new AttrType[1];
+        attrTypes[0] = cf.getAttrtypeforcolumn(columnNo);
 
-        byte[] data = new byte[6+_sizes[0]];
+        byte[] data = new byte[6+attrSizes[0]];
         String val = s.split("\\.")[3];
-        if(_types[0].attrType == AttrType.attrInteger) {
+        if(attrTypes[0].attrType == AttrType.attrInteger) {
             int t = Integer.parseInt(val);
             Convert.setIntValue(t,6, data);
         }else {
             Convert.setStrValue(val, 6, data);
         }
         Tuple jTuple = new Tuple(data,0,data.length);
-        _sizes[0] -= 2;
+        attrSizes[0] -= 2;
 
-        jTuple.setHdr((short)1,_types, _sizes);
+        jTuple.setHdr((short)1,attrTypes, attrSizes);
 
-        if(PredEval.Eval(_selects,jTuple,null,_types, null))
+        if(PredEval.Eval(this.conditions,jTuple,null,attrTypes, null))
             return true;
 
         return false;

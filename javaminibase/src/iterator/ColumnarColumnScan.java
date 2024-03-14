@@ -9,64 +9,57 @@ import java.io.IOException;
 
 public class ColumnarColumnScan extends Iterator{
 
-    private Columnarfile columnarfile;
+    private Columnarfile cf;
     private Scan scan;
     private CondExpr[] OutputFilter;//conditional expression to evaluate the expression
     private CondExpr[] OtherFilter;
     public FldSpec[] perm_mat;
-    private AttrType[] _in1 = null;//get the attribute type of the attribute
+    private AttrType[] attrTypes = null;//get the attribute type of the attribute
     private short[] s_sizes = null;//the size of each attribute
-    private Heapfile[] targetHeapFiles = null;
+    private Heapfile[] targetHF = null;
     private AttrType[] targetAttrTypes = null;
-    private short[] targetShortSizes = null;
-    private short[] givenTargetedCols = null;
-    private short _tuplesize;
-    private Tuple    Jtuple;
-    private int _attrsize;
-    int _columnNo;
+    private short[] targetSizes = null;
+    private short[] targetCols = null;
+    private short tupleSize;
+    private Tuple    t;
+    private int attrSize;
+    int columnNo;
     Sort deletedTuples;
     private int currDeletePos = -1;
-	/*file_name specifying the name of the columnar file, columnNo to indicate the column to be scanned, attrType to indicate the type of the attribute, strSize to indicate the size of the particular column, targetedCols to indicate the proje*/
-    public ColumnarColumnScan(String file_name,
-                              int columnNo,
-                              FldSpec[] proj_list,
-                              short[] targetedCols,
-                              CondExpr[] outFilter,
-                              CondExpr[] otherFilter) throws FileScanException, TupleUtilsException, IOException, InvalidRelation {
-
-        givenTargetedCols = targetedCols;
-        OutputFilter = outFilter;
-        OtherFilter = otherFilter;
-        perm_mat = proj_list;
-        _columnNo = columnNo;
+	
+    public ColumnarColumnScan(String file_name, int columnNo, FldSpec[] proj_list, short[] targetedCols, CondExpr[] outFilter, CondExpr[] otherFilter) throws FileScanException, TupleUtilsException, IOException, InvalidRelation {
+        this.targetCols = targetedCols;
+        this.OutputFilter = outFilter;
+        this.OtherFilter = otherFilter;
+        this.perm_mat = proj_list;
+        this.columnNo = columnNo;
         try {
-            columnarfile = new Columnarfile(file_name);
-            targetHeapFiles = ColumnarScanUtils.getTargetHeapFiles(columnarfile, targetedCols);
-            targetAttrTypes = ColumnarScanUtils.getTargetColumnAttributeTypes(columnarfile, targetedCols);
-            targetShortSizes = ColumnarScanUtils.getTargetColumnStringSizes(columnarfile, targetedCols);
-            Jtuple = ColumnarScanUtils.getProjectionTuple(columnarfile, perm_mat, targetedCols);
+            this.cf = new Columnarfile(file_name);
+            this.targetHF = ColumnarScanUtils.getTargetHeapFiles(cf, targetedCols);
+            this.targetAttrTypes = ColumnarScanUtils.getTargetColumnAttributeTypes(cf, targetedCols);
+            this.targetSizes = ColumnarScanUtils.getTargetColumnStringSizes(cf, targetedCols);
+            t = ColumnarScanUtils.getProjectionTuple(cf, perm_mat, targetedCols);
         } catch (Exception e) {
             e.printStackTrace();
             return;
         }
 
         try {
-            scan = columnarfile.openColumnScan(columnNo);
-            _in1 = new AttrType[1];
-            _in1[0] = columnarfile.getAttrtypeforcolumn(columnNo);
+            scan = cf.openColumnScan(columnNo);
+            attrTypes = new AttrType[1];
+            attrTypes[0] = cf.getAttrtypeforcolumn(columnNo);
             s_sizes = new	short[1];
-            s_sizes[0] = columnarfile.getAttrsizeforcolumn(columnNo);
-            _attrsize = columnarfile.getAttrsizeforcolumn(columnNo);
+            s_sizes[0] = cf.getAttrsizeforcolumn(columnNo);
+            attrSize = cf.getAttrsizeforcolumn(columnNo);
             Tuple t = new Tuple();
-            t.setHdr((short)1, _in1, s_sizes);
-            _tuplesize = t.size();
-            PageId pid = SystemDefs.JavabaseDB.get_file_entry(columnarfile.getDeletedFileName());
+            t.setHdr((short)1, attrTypes, s_sizes);
+            tupleSize = t.size();
+            PageId pid = SystemDefs.JavabaseDB.get_file_entry(cf.getDeletedFileName());
             if (pid != null) {
-
                 FldSpec[] projlist = new FldSpec[1];
                 projlist[0] = new FldSpec(new RelSpec(RelSpec.outer), 1);
-                FileScan fs = new FileScan(columnarfile.getDeletedFileName(), _in1, s_sizes, (short)1, 1, projlist, null);
-                deletedTuples = new Sort(_in1, (short) 1, s_sizes, fs, 1, new TupleOrder(TupleOrder.Ascending), 4, 10);
+                FileScan fs = new FileScan(cf.getDeletedFileName(), attrTypes, s_sizes, (short)1, 1, projlist, null);
+                deletedTuples = new Sort(attrTypes, (short) 1, s_sizes, fs, 1, new TupleOrder(TupleOrder.Ascending), 4, 10);
             }
         } catch (Exception e) {
             throw new FileScanException(e, "openScan() failed");
@@ -95,38 +88,32 @@ public class ColumnarColumnScan extends Iterator{
 
         while (true) {
             int position = getNextPosition();
-            if (position < 0)
-                return null;
-            //tuple1.setHdr(in1_len, _in1, s_sizes);
+            if (position < 0) return null;
+
             Tuple tTuple = null;
             try {
                 tTuple = new Tuple();
-                tTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+                tTuple.setHdr((short) this.targetCols.length, targetAttrTypes, targetSizes);
                 tTuple = new Tuple(tTuple.size());
-                tTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
+                tTuple.setHdr((short) this.targetCols.length, targetAttrTypes, targetSizes);
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;
             }
 
-            for (int i = 0; i < targetHeapFiles.length; i++) {
-                Tuple record = targetHeapFiles[i].getRecord(position);
-                switch (targetAttrTypes[i].attrType) {
-                    case AttrType.attrInteger:
-                        // Assumed that col heap page will have only one entry
-                        tTuple.setIntFld(i + 1, Convert.getIntValue(0, record.getTupleByteArray()));
-                        break;
-                    case AttrType.attrString:
-                        tTuple.setStrFld(i + 1, Convert.getStrValue(0, record.getTupleByteArray(), targetShortSizes[i] + 2));
-                        break;
-                    default:
-                        throw new Exception("Attribute indexAttrType not supported");
-                }
+            for (int i = 0; i < targetHF.length; i++) {
+                Tuple targetRecord = targetHF[i].getRecord(position);
+                if (targetAttrTypes[i].attrType == AttrType.attrInteger)
+                	tTuple.setIntFld(i + 1, Convert.getIntValue(0, targetRecord.getTupleByteArray()));
+                else if (targetAttrTypes[i].attrType == AttrType.attrString)
+                	tTuple.setStrFld(i + 1, Convert.getStrValue(0, targetRecord.getTupleByteArray(), targetSizes[i] + 2));
+                else
+                    throw new Exception("Attribute indexAttrType not supported");
             }
 
             if (PredEval.Eval(OtherFilter, tTuple, null, targetAttrTypes, null) == true) {
-                Projection.Project(tTuple, targetAttrTypes, Jtuple, perm_mat, perm_mat.length);
-                return Jtuple;
+                Projection.Project(tTuple, targetAttrTypes, t, perm_mat, perm_mat.length);
+                return t;
             }
         }
     }
@@ -137,7 +124,7 @@ public class ColumnarColumnScan extends Iterator{
         int position = getNextPosition();
         if (position < 0)
             return false;
-        return columnarfile.markTupleDeleted(position);
+        return cf.markTupleDeleted(position);
     }
 
     private int getNextPosition()throws Exception {
@@ -149,14 +136,14 @@ public class ColumnarColumnScan extends Iterator{
                 return -1;
             }
 
-            Tuple tuple1= new Tuple(_tuplesize);
-            tuple1.setHdr((short)1, _in1, s_sizes);
+            Tuple tuple1= new Tuple(tupleSize);
+            tuple1.setHdr((short)1, attrTypes, s_sizes);
             byte[] data = tuple1.getTupleByteArray();
-            System.arraycopy(t.getTupleByteArray(), 0, data, 6, _attrsize);
+            System.arraycopy(t.getTupleByteArray(), 0, data, 6, attrSize);
             t.tupleInit(data, 0, data.length);
             t.setHeaderMetaData();
-            if (PredEval.Eval(OutputFilter, t, null, _in1, null) == true) {
-                int position = columnarfile.getColumn(_columnNo).positionOfRecord(rid);
+            if (PredEval.Eval(OutputFilter, t, null, attrTypes, null) == true) {
+                int position = cf.getColumn(columnNo).positionOfRecord(rid);
                 if(deletedTuples != null && position > currDeletePos){
                     while (true){
                         Tuple dtuple = deletedTuples.get_next();

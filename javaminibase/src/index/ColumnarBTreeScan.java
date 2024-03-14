@@ -2,7 +2,6 @@ package index;
 
 import btree.*;
 import columnar.Columnarfile;
-import diskmgr.Page;
 import global.*;
 import heap.*;
 import iterator.*;
@@ -11,36 +10,33 @@ import java.io.IOException;
 
 public class ColumnarBTreeScan extends Iterator implements GlobalConst{
 
-    private String indName;
-    private Columnarfile columnarfile;
-    private BTreeFile btIndFile;
-    private IndexFileScan btIndScan;
-    private CondExpr[] _selects;
+    private String btName;
+    private Columnarfile cf;
+    private BTreeFile btFile;
+    private IndexFileScan btScan;
+    private CondExpr[] conditions;
     private boolean index_only;
 
-    public ColumnarBTreeScan (Columnarfile cf,
-                              int columnNo,
-                              CondExpr[] selects,
-                              boolean indexOnly) throws IndexException {
-        _selects = selects;
-        index_only = indexOnly;
+    public ColumnarBTreeScan (Columnarfile cf, int columnNo, CondExpr[] selects, boolean indexOnly) throws IndexException {
+        this.conditions = selects;
+        this.index_only = indexOnly;
         try {
 
-            columnarfile = cf;
-            indName = columnarfile.getBTName(columnNo);
+            this.cf = cf;
+            this.btName = cf.getBTName(columnNo);
         } catch (Exception e) {
             e.printStackTrace();
             return;
         }
 
         try {
-            btIndFile = new BTreeFile(indName);
+            this.btFile = new BTreeFile(this.btName);
         } catch (Exception e) {
             throw new IndexException(e, "IndexScan.java: BTreeFile exceptions caught from BTreeFile constructor");
         }
 
         try {
-            btIndScan = IndexUtils.BTree_scan(_selects, btIndFile);
+            this.btScan = IndexUtils.BTree_scan(this.conditions, this.btFile);
         } catch (Exception e) {
             throw new IndexException(e, "IndexScan.java: BTreeFile exceptions caught from IndexUtils.BTree_scan().");
         }
@@ -66,13 +62,13 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst{
                 if (position < 0)
                     return null;
                 // tuple that needs to sent
-                Tuple JTuple = new Tuple(10);
+                Tuple t = new Tuple(10);
                 AttrType[] type = new AttrType[1];
                 type[0] = new AttrType(AttrType.attrInteger);
                 short[] sizes = new short[0];
-                JTuple.setHdr((short)1, type, sizes);
-                JTuple.setIntFld(1, position);
-                return JTuple;
+                t.setHdr((short)1, type, sizes);
+                t.setIntFld(1, position);
+                return t;
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -93,13 +89,13 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst{
         if (position < 0)
             return false;
 
-        return columnarfile.markTupleDeleted(position);
+        return cf.markTupleDeleted(position);
     }
 
     public int get_next_position() throws IndexException, UnknownKeyTypeException {
         KeyDataEntry nextentry;
         try {
-            nextentry = btIndScan.get_next();
+            nextentry = btScan.get_next();
         } catch (Exception e) {
             throw new IndexException(e, "IndexScan.java: BTree error");
         }
@@ -120,12 +116,12 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst{
         if (!closeFlag) {
             closeFlag = true;
             try {
-                btIndFile.close();
+                btFile.close();
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
-            btIndScan = null;
+            btScan = null;
         }
     }
 
