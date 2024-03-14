@@ -9,24 +9,24 @@ public class TID {
     RID[] recordIDs;
 
     public TID(){}
-    public TID(int n){
-        this.numRIDs = n;
+    public TID(int numRids){
+        this.numRIDs = numRids;
     }
-    public TID(int n, int p){
-        this(n);
-        this.position = p;
+    public TID(int numRids, int position){
+    	this.numRIDs = numRids;
+        this.position = position;
     }
-    public TID(int n, int p, RID[] rids){
-        this(n, p);
-        recordIDs = new RID[n];
-        for(int i=0;i<rids.length;i++){
-            recordIDs[i] = new RID();
-            recordIDs[i].copyRid(rids[i]);
+    public TID(int numRids, int position, RID[] recordIDs){
+    	this.numRIDs = numRids;
+        this.position = position;
+        this.recordIDs = new RID[numRids];
+        for(int i=0;i<recordIDs.length;i++){
+            this.recordIDs[i] = new RID();
+            this.recordIDs[i].copyRid(recordIDs[i]);
         }
     }
 
     public void copyTid(TID tid){
-
         numRIDs = tid.numRIDs;
         position = tid.position;
         recordIDs = new RID[numRIDs];
@@ -37,15 +37,18 @@ public class TID {
 
     public boolean equals(TID tid){
 
-        if(numRIDs != tid.numRIDs) return false;
-        if(position != tid.position) return false;
+        if(numRIDs != tid.numRIDs) 
+        	return false;
+        if(position != tid.position) 
+        	return false;
         for(int i = 0; i< numRIDs; i++){
-            if(!recordIDs[i].equals(tid.recordIDs[i])) return false;
+            if(!recordIDs[i].equals(tid.recordIDs[i])) 
+            	return false;
         }
         return true;
     }
 
-    public void writeToByteArray(byte[] array, int offset)throws java.io.IOException
+    public void writeToByteArray(byte[] array, int offset) throws java.io.IOException
     {
         Convert.setIntValue ( numRIDs, offset, array);
         Convert.setIntValue ( position, offset+4, array);
@@ -58,7 +61,7 @@ public class TID {
 
     public void setPosition(int position){
 
-        this.position = position; //is this it? not sure
+        this.position = position;
     }
 
     public void setRID(int column, RID recordID){
