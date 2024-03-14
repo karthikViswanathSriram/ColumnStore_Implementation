@@ -9,9 +9,6 @@ import iterator.*;
 import java.io.IOException;
 import java.util.*;
 
-import static tests.TestDriver.FAIL;
-import static tests.TestDriver.OK;
-
 public class Columnarfile {
 
 	// Number of columns
@@ -31,10 +28,6 @@ public class Columnarfile {
     
     // Table name
     String tableName = null;
-    
-    // Header details
-    Tuple hdr = null;
-    RID hdrRid = null;
     
     // Map Column Name to ID
     HashMap<String, Integer> columnMap;
@@ -57,7 +50,6 @@ public class Columnarfile {
     public Columnarfile(java.lang.String name) throws HFException, HFBufMgrException, HFDiskMgrException, IOException {
         Heapfile tempFile = null;
         Scan scan = null;
-        RID rid = null;
         tableName = name;
         columnMap = new HashMap<>();
         try {
@@ -70,7 +62,7 @@ public class Columnarfile {
             tempFile = new Heapfile(name + ".hdr");
 
             scan = tempFile.openScan();
-            hdrRid = new RID();
+            RID hdrRid = new RID();
             Tuple hdr = scan.getNext(hdrRid);
             hdr.setHeaderMetaData();
             
@@ -135,77 +127,74 @@ public class Columnarfile {
      * @throws HFDiskMgrException
      */
     public Columnarfile(java.lang.String name, int numcols, AttrType[] types, short[] attrSizes, String[] colnames) throws IOException, InvalidTupleSizeException, InvalidTypeException, FieldNumberOutOfBoundException, SpaceNotAvailableException, HFException, HFBufMgrException, InvalidSlotNumberException, HFDiskMgrException {
-        RID rid1 = new RID();
-        boolean status = true;
         Heapfile hdrFile = null;
         columnMap = new HashMap<>();
         try {
             heapFiles = new Heapfile[numcols];
-            //hf[0] for header file by default
             hdrFile = new Heapfile(name + ".hdr");
 
-        } catch (Exception e) {
-            status = false;
+        } catch (Exception e) {            
             e.printStackTrace();
+            return;
         }
-        if (status == true) {
-            numColumns = (short) (numcols);
-            this.tableName = name;
-            attrTypes = new AttrType[numColumns];
-            attrSize = new short[numColumns];
-            actualSize = new short[numColumns];
-            int k = 0;
-            for (int i = 0; i < numcols; i++) {
-                attrTypes[i] = new AttrType(types[i].attrType);
-                switch (types[i].attrType) {
-                    case 0:
-                        actualSize[i] = attrSize[i] = attrSizes[k];
-                        actualSize[i] += 2;
-                        k++;
-                        break;
-                    case 1:
-                    case 2:
-                        actualSize[i] = attrSize[i] = 4;
-                        break;
-                    case 3:
-                        actualSize[i] = attrSize[i] = 1;
-                        break;
-                    case 4:
-                        attrSize[i] = 0;
-                        break;
-                }
+        
+        numColumns = (short) (numcols);
+        this.tableName = name;
+        attrTypes = new AttrType[numColumns];
+        attrSize = new short[numColumns];
+        actualSize = new short[numColumns];
+        int k = 0;
+        for (int i = 0; i < numcols; i++) {
+            attrTypes[i] = new AttrType(types[i].attrType);
+            switch (types[i].attrType) {
+                case 0:
+                    actualSize[i] = attrSize[i] = attrSizes[k];
+                    actualSize[i] += 2;
+                    k++;
+                    break;
+                case 1:
+                case 2:
+                    actualSize[i] = attrSize[i] = 4;
+                    break;
+                case 3:
+                    actualSize[i] = attrSize[i] = 1;
+                    break;
+                case 4:
+                    attrSize[i] = 0;
+                    break;
             }
-
-            AttrType[] htypes = new AttrType[2 + (numcols * 3)];
-            htypes[0] = new AttrType(AttrType.attrInteger);
-            for (int i = 1; i < htypes.length - 1; i = i + 3) {
-                htypes[i] = new AttrType(AttrType.attrInteger);
-                htypes[i + 1] = new AttrType(AttrType.attrInteger);
-                htypes[i + 2] = new AttrType(AttrType.attrString);
-            }
-            htypes[htypes.length - 1] = new AttrType(AttrType.attrInteger);
-            short[] hsizes = new short[numcols];
-            for (int i = 0; i < numcols; i++) {
-                hsizes[i] = 20; //column name can't be more than 20 chars
-            }
-            hdr = new Tuple();
-            hdr.setHdr((short) htypes.length, htypes, hsizes);
-            int size = hdr.size();
-
-            hdr = new Tuple(size);
-            hdr.setHdr((short) htypes.length, htypes, hsizes);
-            hdr.setIntFld(1, numcols);
-            int j = 0;
-            for (int i = 0; i < numcols; i++, j = j + 3) {
-                hdr.setIntFld(2 + j, attrTypes[i].attrType);
-                hdr.setIntFld(3 + j, attrSize[i]);
-                hdr.setStrFld(4 + j, colnames[i]);
-                columnMap.put(colnames[i], i);
-            }
-            hdrRid = hdrFile.insertRecord(hdr.returnTupleByteArray());
-            BTMap = new HashMap<>();
-            BMMap = new HashMap<>();
         }
+
+        AttrType[] htypes = new AttrType[2 + (numcols * 3)];
+        htypes[0] = new AttrType(AttrType.attrInteger);
+        for (int i = 1; i < htypes.length - 1; i = i + 3) {
+            htypes[i] = new AttrType(AttrType.attrInteger);
+            htypes[i + 1] = new AttrType(AttrType.attrInteger);
+            htypes[i + 2] = new AttrType(AttrType.attrString);
+        }
+        htypes[htypes.length - 1] = new AttrType(AttrType.attrInteger);
+        short[] hsizes = new short[numcols];
+        for (int i = 0; i < numcols; i++) {
+            hsizes[i] = 20; //column name can't be more than 20 chars
+        }
+        Tuple hdr = new Tuple();
+        hdr.setHdr((short) htypes.length, htypes, hsizes);
+        int size = hdr.size();
+
+        hdr = new Tuple(size);
+        hdr.setHdr((short) htypes.length, htypes, hsizes);
+        hdr.setIntFld(1, numcols);
+        int j = 0;
+        for (int i = 0; i < numcols; i++, j = j + 3) {
+            hdr.setIntFld(2 + j, attrTypes[i].attrType);
+            hdr.setIntFld(3 + j, attrSize[i]);
+            hdr.setStrFld(4 + j, colnames[i]);
+            columnMap.put(colnames[i], i);
+        }
+        hdrFile.insertRecord(hdr.returnTupleByteArray());
+        BTMap = new HashMap<>();
+        BMMap = new HashMap<>();
+        
     }
 
     /**
