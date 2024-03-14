@@ -165,19 +165,19 @@ public class ColumnarIndexScan extends Iterator{
         }
     }
 
-    public boolean delete_next() throws Exception {
+    public boolean delete_next(IndexType[] index ) throws Exception {
 
-        /*switch (_index.indexType) {
+        switch (index[0].indexType) {
             case IndexType.B_Index:
-                return ((ColumnarBTreeScan)scan).delete_next();
+                return ((ColumnarBTreeScan)scan[0]).delete_next();
             case IndexType.BitMapIndex:
-                return ((ColumnarBitmapScan)scan).delete_next();
+                return ((ColumnarBitmapScan)scan[0]).delete_next();
             case IndexType.None:
             default:
                 throw new UnknownIndexTypeException("Only BTree index is supported so far");
 
-        }*/
-        return true;
+        }
+//        return true;
     }
 
     public void close(){
