@@ -1,4 +1,4 @@
-JDKPATH = /usr/lib/jvm/java-8-openjdk-amd64
+JDKPATH = /usr
 LIBPATH = /afs/asu.edu/users/r/g/a/rganes11/minjava/javaminibase
 CLASSPATH = $(JDKPATH)/lib/classes.zip:.:..:$(LIBPATH)
 BINPATH = $(JDKPATH)/bin
