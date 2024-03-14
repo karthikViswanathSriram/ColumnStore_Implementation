@@ -37,6 +37,9 @@ db:
 	make -C heap
 	make -C index
 	make -C iterator
+	make -C interfaces
+	make -C columnar
+	make -C bitmap
 	
 doc:
 	$(JAVADOC) $(DOCFILES)
