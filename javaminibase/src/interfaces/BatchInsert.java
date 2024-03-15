@@ -22,12 +22,13 @@ public class BatchInsert {
 		String columnarFile = args[2];
 		Integer numColumns = Integer.parseInt(args[3]);
 		String dbPath = HelperFunctions.dbPath(columnDB);
+		int createDB = 0;
 
+		
 		int numPages = NUM_PAGES;
 
 		File f = new File(dbPath);
 		
-		/*
 		// Check if file exists 
 		// if it doesn't don't create a new db
 		if(f.exists() && !f.isDirectory()) 
@@ -39,7 +40,21 @@ public class BatchInsert {
 		{
 			System.out.println("File didn't exist hence creating");
 		}
-		*/
+
+		if(args.length == 5)
+		{
+			if(Integer.parseInt(args[4]) == 1)
+			{
+				numPages = 0;
+				System.out.println("Using existing DB");
+			}
+			else
+			{
+				numPages = NUM_PAGES;
+				System.out.println("Creating new DB");
+			}
+		}
+		
 		
 		SystemDefs sysDef = new SystemDefs(dbPath, numPages, NUMBUF, null);
 
