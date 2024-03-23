@@ -1,5 +1,5 @@
-echo "java interfaces/BatchInsert ../sampledata50000.txt mydb colfile 4"
-java interfaces/BatchInsert ../sampledata50000.txt mydb colfile 4
+echo "java interfaces/BatchInsert ../sampledata.txt mydb colfile 4"
+java interfaces/BatchInsert ../sampledata.txt mydb colfile 4
 if [ $1 == "BITMAP" ] || [ $1 == "BTREE" ]; then
     echo "java interfaces/Index mydb colfile C $1"
     java interfaces/Index mydb colfile C $1 
