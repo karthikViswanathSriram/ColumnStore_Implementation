@@ -70,6 +70,10 @@ SMJoin:SM_JoinTest.java
 sortmerge: SMJoin
 	$(JAVA) tests.SM_JoinTest
 
+# test BitMap
+
+BitMap:BitMapTest.java
+	$(JAVAC) TestDriver.java BitMapTest.java
 
 
 
