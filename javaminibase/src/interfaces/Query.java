@@ -97,8 +97,10 @@ public class Query {
 
         // Empty
         CondExpr[][] scanConstraint = new CondExpr[scanTypes.length][1];
-        scanConstraint[0] = new CondExpr[1];
-        scanConstraint[0] = null;
+//        scanConstraint[0] = new CondExpr[1];
+//        scanConstraint[0] = null
+        
+        scanConstraint[0] = valueConstraint;
         
         Iterator it = null;
         try {

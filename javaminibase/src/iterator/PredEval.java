@@ -80,9 +80,13 @@ public class PredEval {
                         fld1 = temp_ptr.operand1.symbol.offset;
                         if (temp_ptr.operand1.symbol.relation.key == RelSpec.outer) {
                             tuple1 = t1;
+                            if(in1.length < fld1)
+                            	fld1 = 1;
                             comparison_type.attrType = in1[fld1 - 1].attrType;
                         } else {
                             tuple1 = t2;
+                            if(in2.length < fld1)
+                            	fld1 = 1;
                             comparison_type.attrType = in2[fld1 - 1].attrType;
                         }
                         break;

@@ -95,7 +95,8 @@ public class DelQuery {
         CondExpr[][] scanConstraint = new CondExpr[scanTypes.length][1];
 
         for (int i = 0; i < scanTypes.length; i++) {
-            scanConstraint[i] = HelperFunctions.getCondExpr(scanConstraints[i]);
+//            scanConstraint[i] = HelperFunctions.getCondExpr(scanConstraints[i]);
+        	scanConstraint[i] = otherConstraint;
         }
         cf.close();
         Iterator it = null;
