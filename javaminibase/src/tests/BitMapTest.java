@@ -3,10 +3,13 @@ package tests;
 import bitmap.BM;
 import bitmap.BitMapFile;
 import columnar.Columnarfile;
-import columnar.ValueInt;
+import columnar.IntegerValue;
+import columnar.StringValue;
 import diskmgr.PCounter;
 import global.AttrType;
+import global.RID;
 import global.SystemDefs;
+import heap.Scan;
 import heap.Tuple;
 
 import static global.GlobalConst.NUMBUF;
@@ -64,9 +67,21 @@ class BitMapDriver extends TestDriver {
                 t.setStrFld(3, "A" + i);
                 cf.insertTuple(t.getTupleByteArray());
             }
+            
+            
+            Scan columnScan = cf.openColumnScan(0);
+            RID rid = new RID();
+            Tuple tuple;
+            while (true) {
+                tuple = columnScan.getNext(rid);
+                if (tuple == null) {
+                    break;
+                }
+            }
+//            cf.openColumnScan(0);
 
-            cf.createBitMapIndex(0, new ValueInt(4));
-            BitMapFile bitMapFile = new BitMapFile(cf.getBMName(0, new ValueInt(4)));
+            cf.createBitMapIndex(2, new StringValue("A1"));
+            BitMapFile bitMapFile = new BitMapFile(cf.getBMName(2, new StringValue("A1")));
             BM.printBitMap(bitMapFile.getHeaderPage());
             bitMapFile.close();
         } catch (Exception e) {

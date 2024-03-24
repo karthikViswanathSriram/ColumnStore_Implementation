@@ -458,13 +458,15 @@ public class Columnarfile {
         int pos = 0;
         while (true) {
             tuple = columnScan.get_next();
+            
             if (tuple == null) {
                 break;
             }
             
+            short[] fldOff = tuple.copyFldOffset();
             ValueClass valueClass = attrTypes[columnNo].attrType == AttrType.attrString ?
-            		new StringValue(Convert.getStrValue(0, tuple.getTupleByteArray(), actualSize[columnNo])) 
-            		: new IntegerValue(Convert.getIntValue(0, tuple.getTupleByteArray()));
+            		new StringValue(Convert.getStrValue(fldOff[0], tuple.getTupleByteArray(), actualSize[columnNo])) 
+            		: new IntegerValue(Convert.getIntValue(fldOff[0], tuple.getTupleByteArray()));
             
             if (valueClass.toString().equals(value.toString())) {
                 bitMapFile.Insert(pos);

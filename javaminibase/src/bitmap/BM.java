@@ -16,7 +16,7 @@ public class BM implements GlobalConst {
     public BM() {
     }
 
-    public void printBitMap(BitMapHeaderPage header) throws Exception {
+    public static void printBitMap(BitMapHeaderPage header) throws Exception {
         if (header == null) {
             System.out.println("Header is empty");
             return;
