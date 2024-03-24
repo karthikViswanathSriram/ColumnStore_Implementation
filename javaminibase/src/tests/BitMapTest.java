@@ -56,7 +56,7 @@ class BitMapDriver extends TestDriver {
             String[] attrNames = {"Attr1", "Attr2","Attr3"};
             Columnarfile cf = new Columnarfile(name, numColumns, types, sizes, attrNames);
 
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 10000; i++) {
                 Tuple t = new Tuple();
                 t.setHdr((short) 3, types, sizes);
                 int s = t.size();
@@ -64,24 +64,13 @@ class BitMapDriver extends TestDriver {
                 t.setHdr((short) 3, types, sizes);
                 t.setIntFld(1, i % 5);
                 t.setFloFld(2, (float) (i * 1.1));
-                t.setStrFld(3, "A" + i);
+                t.setStrFld(3, "A" + (i%5));
                 cf.insertTuple(t.getTupleByteArray());
             }
             
-            
-            Scan columnScan = cf.openColumnScan(0);
-            RID rid = new RID();
-            Tuple tuple;
-            while (true) {
-                tuple = columnScan.getNext(rid);
-                if (tuple == null) {
-                    break;
-                }
-            }
-//            cf.openColumnScan(0);
 
             cf.createAllBitMapIndexForColumn(2);
-            BitMapFile bitMapFile = new BitMapFile(cf.getBMName(2, new StringValue("A1")));
+            BitMapFile bitMapFile = new BitMapFile(cf.getBMName(2, new StringValue("A0")));
             BM.printBitMap(bitMapFile.getHeaderPage());
             bitMapFile.close();
         } catch (Exception e) {

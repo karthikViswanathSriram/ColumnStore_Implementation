@@ -177,8 +177,12 @@ public class BMPage extends Page implements GlobalConst {
      */
     public PageId getNextPage()
             throws IOException {
-        nextPage.pid = Convert.getIntValue(NEXT_PAGE, data);
-        return nextPage;
+    	int nextPid = Convert.getIntValue(NEXT_PAGE, data);
+    	if (nextPid!=-1) {
+    		nextPage.pid = nextPid;
+    		return nextPage;
+    	}
+    	return new PageId(-1);
     }
 
     /**
