@@ -78,13 +78,13 @@ public class BatchInsert {
 
 			// Parameters for creating a columnar file
 			AttrType[] types = new AttrType[numColumns];
-			short[] sizes = new short[numColumns];
 			String[] names  = new String[numColumns];
 
 			// First Line having column names and attribute types
 			String attrType = br.readLine();
 			String rows[] = attrType.split("\t");
 			int i = 0;
+			int numStrings = 0;
 			for (String row: rows) 
 			{
 				String cols[] = row.split(":");
@@ -94,14 +94,27 @@ public class BatchInsert {
 					types[i] = new AttrType(AttrType.attrString);
 					// char(25) 
 					// index 5 till end
-					sizes[i] = Short.parseShort(cols[1].substring(5, cols[1].length()-1));
+					// sizes[i] = Short.parseShort(cols[1].substring(5, cols[1].length()-1));
+					numStrings++;
 				}
 				else
 				{
 					types[i] = new AttrType(AttrType.attrInteger);
-					sizes[i] = 4;
+					// sizes[i] = 4;
 				}
 				i++;
+			}
+
+			short[] sizes = new short[numStrings];
+			i = 0;
+			for (String row: rows)
+			{
+				String cols[] = row.split(":");
+				if (cols[1].contains("char"))
+				{
+					sizes[i] = Short.parseShort(cols[1].substring(5, cols[1].length()-1)); 
+					i++;
+				}
 			}
 
 			Columnarfile cf = new Columnarfile(columnarFile, numColumns, types, sizes, names);
@@ -109,7 +122,7 @@ public class BatchInsert {
 			int tupleCount = 0;
 			// Second row (line)
 			String line = br.readLine();
-			while (line != null && tupleCount < 25000)   
+			while (line != null)   
 			{
 				String colValues[] = line.split("\t");
 
