@@ -547,7 +547,6 @@ public class Columnarfile {
         columnScan.close();
         
         for (BitMapFile bitMapFile : bitMapFiles) {
-        	BM.traverseBitMap(bitMapFile);
             bitMapFile.close();
         }
         

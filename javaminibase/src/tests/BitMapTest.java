@@ -70,9 +70,7 @@ class BitMapDriver extends TestDriver {
 
             cf.createAllBitMapIndexForColumn(2);
             BitMapFile bitMapFile = new BitMapFile(cf.getBMName(2, new StringValue("A0")));
-            BM.traverseBitMap(bitMapFile);
             BM.printBitMap(bitMapFile.getHeaderPage());
-            BM.traverseBitMap(bitMapFile);
             bitMapFile.close();
         } catch (Exception e) {
             e.printStackTrace();
