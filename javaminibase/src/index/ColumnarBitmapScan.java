@@ -25,6 +25,7 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
     private BitSet bitMaps;
     private int counter = 0;
     private int scanCounter = 0;
+    private int pageCounter = 0;
 
     public ColumnarBitmapScan(Columnarfile cf, int columnNo, CondExpr[] conditions, boolean indexOnly) throws IndexException {
 
@@ -65,7 +66,10 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
         while (position != -1) {
             try {
                 position = get_next_position();
-                if (position < 0)
+            	while (position == -2) {
+            		position = get_next_position();
+            	}
+            	if (position == -1)
                     return null;
                 Tuple t = new Tuple(10);
                 AttrType[] type = new AttrType[1];
@@ -93,7 +97,7 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
     public int get_next_position(){
         try {
 
-            if (scanCounter == 0 || scanCounter > counter) {
+            if (scanCounter == 0) {
                 bitMaps = new BitSet();
                 for(BitmapFileScan s : bmScans){
                     counter = s.counter;
@@ -106,9 +110,10 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
                     }
                 }
             }
+            
             while (scanCounter <= counter) {
                 if (bitMaps.get(scanCounter)) {
-                    int position = scanCounter;
+                    int position = scanCounter + pageCounter;
                     scanCounter++;
                     return position;
                 } else {
@@ -119,7 +124,9 @@ public class ColumnarBitmapScan extends Iterator implements GlobalConst{
         catch (Exception e){
             e.printStackTrace();
         }
-        return -1;
+        scanCounter = 0;
+        pageCounter += counter;
+        return -2;
     }
 
     public void close() throws Exception {

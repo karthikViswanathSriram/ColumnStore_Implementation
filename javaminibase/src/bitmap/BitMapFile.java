@@ -154,7 +154,17 @@ public class BitMapFile implements GlobalConst {
         if (value instanceof IntegerValue) {
             bmHeaderPage.setValue(((IntegerValue) value).getValue().toString());
         } else {
-            bmHeaderPage.setValue((String)((StringValue) value).getValue());
+            bmHeaderPage.setValue((String) ((StringValue) value).getValue());
+        }
+
+        columnarFileName = bmHeaderPage.getColumnarFileName();
+        columnNumber = bmHeaderPage.getColumnNumber();
+        attrType = bmHeaderPage.getAttrType();
+
+        if (attrType.attrType == AttrType.attrString) {
+            value = new StringValue(bmHeaderPage.getValue());
+        } else {
+            value = new IntegerValue(Integer.parseInt(bmHeaderPage.getValue()));
         }
 
     }
@@ -373,9 +383,10 @@ public class BitMapFile implements GlobalConst {
         return tmpId;
 
     }
-    
+
     /***
      * delete bit at the position and re-organise the bitmap
+     * 
      * @param position
      * @return
      * @throws Exception
@@ -406,11 +417,11 @@ public class BitMapFile implements GlobalConst {
                 int position1 = bitSet.nextSetBit(position);
                 bitSet.clear(position1);
                 bitSet.clear(position, position1);
-                bitSet.set(position1-1);
+                bitSet.set(position1 - 1);
                 position = position1;
             }
-            if(lastBit)
-                bitSet.set(bitSet.length()-1);
+            if (lastBit)
+                bitSet.set(bitSet.length() - 1);
             bmPage.writeBMPageArray(bitSet.toByteArray());
             for (PageId pinnedPage : pinnedPages) {
                 unpinPage(pinnedPage, true);
@@ -418,14 +429,15 @@ public class BitMapFile implements GlobalConst {
         }
         return Boolean.TRUE;
     }
-    
+
     /***
      * delete bit at the position and re-organise the bitmap
+     * 
      * @param pageId
      * @return
      */
-    private boolean _fullDelete(PageId pageId){
-        if(pageId.pid == INVALID_PAGE)
+    private boolean _fullDelete(PageId pageId) {
+        if (pageId.pid == INVALID_PAGE)
             return false;
 
         try {
@@ -435,11 +447,11 @@ public class BitMapFile implements GlobalConst {
             boolean firstBit = bitSet.get(0);
             bitSet = bitSet.get(1, bitSet.length());
             boolean lastBit = _fullDelete(bmPage.getNextPage());
-            if(lastBit)
-                bitSet.set(bitSet.length()-1);
+            if (lastBit)
+                bitSet.set(bitSet.length() - 1);
             bmPage.writeBMPageArray(bitSet.toByteArray());
             return firstBit;
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return false;
         }

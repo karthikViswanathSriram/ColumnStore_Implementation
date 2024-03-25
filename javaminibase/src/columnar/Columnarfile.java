@@ -1,5 +1,6 @@
 package columnar;
 
+import bitmap.BM;
 import bitmap.BitMapFile;
 import btree.*;
 import global.*;
@@ -527,9 +528,10 @@ public class Columnarfile {
                 bitMapFile = new BitMapFile(bitMapFileName, this, columnNo, valueClass, attrTypes[columnNo]);
                 addIndexToColumnar(1, bitMapFileName);
                 BMMap.put(bitMapFileName, bitMapFile);
-            } else {
-                bitMapFile = getBMIndex(bitMapFileName);
+            }else if(BMMap.get(bitMapFileName) == null) {
+                BMMap.put(bitMapFileName, new BitMapFile(bitMapFileName, this, columnNo, valueClass, attrTypes[columnNo]));
             }
+            bitMapFile = BMMap.get(bitMapFileName);
             bitMapFiles.add(bitMapFile);
 
             for (BitMapFile existingBitMapFile : bitMapFiles) {
@@ -545,8 +547,11 @@ public class Columnarfile {
         columnScan.close();
         
         for (BitMapFile bitMapFile : bitMapFiles) {
+        	BM.traverseBitMap(bitMapFile);
             bitMapFile.close();
         }
+        
+        
         
         return true;
     }
