@@ -1,3 +1,6 @@
 *.class
 .DS_store
 **/*.class
+*.classpath
+*.project
+*.minibase-db

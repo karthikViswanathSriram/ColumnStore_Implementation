@@ -108,7 +108,7 @@ public class ColumnarColumnScan extends Iterator{
                 e.printStackTrace();
                 return null;
             }
-
+            int j = 0;
             for (int i = 0; i < targetHeapFiles.length; i++) {
                 Tuple record = targetHeapFiles[i].getRecord(position);
                 switch (targetAttrTypes[i].attrType) {
@@ -117,7 +117,8 @@ public class ColumnarColumnScan extends Iterator{
                         tTuple.setIntFld(i + 1, Convert.getIntValue(0, record.getTupleByteArray()));
                         break;
                     case AttrType.attrString:
-                        tTuple.setStrFld(i + 1, Convert.getStrValue(0, record.getTupleByteArray(), targetShortSizes[i] + 2));
+                        tTuple.setStrFld(i + 1, Convert.getStrValue(0, record.getTupleByteArray(), targetShortSizes[j] + 2));
+                        j+=1;
                         break;
                     default:
                         throw new Exception("Attribute indexAttrType not supported");

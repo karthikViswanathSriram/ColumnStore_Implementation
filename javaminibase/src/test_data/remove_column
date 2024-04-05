@@ -1,0 +1,19 @@
+def remove_column(filename, column_number):
+    with open(filename, 'r') as file:
+        lines = file.readlines()
+
+    modified_lines = []
+    for line in lines:
+        columns = line.strip().split('\t')
+        if len(columns) >= column_number:
+            del columns[column_number - 1]  # Adjusting for 0-based indexing
+        modified_lines.append('\t'.join(columns))
+
+    filename = "5-10000aa.txt"
+    with open(filename, 'w') as file:
+        file.write('\n'.join(modified_lines))
+
+
+filename = "5-10000a.txt"
+column_number = 5
+remove_column(filename, column_number)

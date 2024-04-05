@@ -1,0 +1,13 @@
+A:char(25)	B:char(25)	C:int	D:int
+Florida	TRINIDAD_AND_TOBAGO	9
+New_Mexico	Minnesota	2	27
+Texas	North_Carolina	2	21
+Mississippi	Uzbekistan	9	67
+Arizona	California	7	55
+Rhode_Island	Alabama	6	92
+Alabama	Malta	6	84
+California	Sudan	4	70
+Connecticut	France	8	92
+Ohio	Massachusetts	7	40
+AAA	BBB	10	100
+AAAA	BBBB	10	100

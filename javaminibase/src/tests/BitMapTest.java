@@ -64,7 +64,7 @@ class BitMapDriver extends TestDriver {
                 t.setHdr((short) 3, types, sizes);
                 t.setIntFld(1, i % 5);
                 t.setFloFld(2, (float) (i * 1.1));
-                t.setStrFld(3, "A" + (i % 5));
+                t.setStrFld(3, "A" + (i % 100));
                 cf.insertTuple(t.getTupleByteArray());
             }
 
