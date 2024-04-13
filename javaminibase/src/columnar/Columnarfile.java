@@ -994,5 +994,9 @@ public class Columnarfile {
 
         return tuple;
     }
+    
+    public HashMap<String,BTreeFile> getBtreeHash() {
+    	return BTMap;
+    }
 
 }

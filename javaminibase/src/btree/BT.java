@@ -170,7 +170,7 @@ public class BT implements GlobalConst {
                         (Convert.getIntValue(offset, from)));
             } else if (keyType == AttrType.attrString) {
                 //System.out.println(" offset  "+ offset + "  " + length + "  "+n);
-                key = new StringKey(Convert.getStrValue(offset, from, length - n));
+                key = new StringKey(Convert.getStrValue(offset, from, length));
             } else
                 throw new KeyNotMatchException(null, "key types do not match");
 

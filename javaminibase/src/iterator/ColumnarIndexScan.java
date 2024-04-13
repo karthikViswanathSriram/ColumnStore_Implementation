@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Set;
-
+import java.util.Map;
 
 /**
  * Created by dixith on 3/18/18.
@@ -70,6 +70,25 @@ public class ColumnarIndexScan extends Iterator{
         targetShortSizes = ColumnarScanUtils.getTargetColumnStringSizes(columnarfile, targetedCols);
         Jtuple = ColumnarScanUtils.getProjectionTuple(columnarfile, perm_mat, targetedCols);
 
+        // if there is no condition for the query, get the first available index from the hashmap and call ColumnarBtreeScan object
+        if(columnNos.length==0) {
+            Map.Entry<String,BTreeFile> entry = columnarfile.getBtreeHash().entrySet().iterator().next();
+            String key = entry.getKey();
+            BTreeFile value = entry.getValue();
+            System.out.println(key);
+            String[] tmp=key.split("\\.");
+            
+            Iterator it = new ColumnarBTreeScan(columnarfile, Integer.parseInt(tmp[tmp.length-1]),null, indexOnly);
+            scan = new Iterator[1];
+            scan[0] = it;              
+            
+//            AttrType[] types = new AttrType[1];
+//            types[0] = new AttrType(AttrType.attrInteger);
+//            short[] sizes = new short[0];
+//            scan[0] = new ColumnarSort(types, (short) 1, sizes, im, 1, new TupleOrder(TupleOrder.Ascending), 4,
+//                    mem);
+        }
+        
         for(int i = 0; i < columnNos.length; i++) {
             switch (indexTypes[i].indexType) {
                 case IndexType.B_Index:

@@ -1,6 +1,8 @@
 package interfaces;
 
 
+import java.util.Arrays;
+
 import columnar.Columnarfile;
 import diskmgr.PCounter;
 import global.AttrType;
@@ -47,8 +49,8 @@ public class Query {
         }
         else
         {
-            temp[0] = valueConstraints.substring(0,1);
-        }
+            temp[0] = valueConstraints.substring(0,1);            
+        }        
         runQuery(columnarFile, outputColumns, valueConstraints, temp, scanTypes, temp2, targetColumns);
 
         SystemDefs.JavabaseBM.flushAllPages();
@@ -59,8 +61,7 @@ public class Query {
         System.out.println("Write Count: " + PCounter.wcounter);
     }
 
-    private static void runQuery(String columnarFile, String[] outputColumns, String valueConstraints, String[] scanColumns, String[] scanTypes, String[] scanConstraints, String[] targetColumns) throws Exception {
-
+    private static void runQuery(String columnarFile, String[] outputColumns, String valueConstraints, String[] scanColumns, String[] scanTypes, String[] scanConstraints, String[] targetColumns) throws Exception {    	
         Columnarfile cf = new Columnarfile(columnarFile);
 
         AttrType[] opAttr = new AttrType[outputColumns.length];
@@ -84,6 +85,9 @@ public class Query {
                 scanCols[i] = cf.getAttributePosition(attribute);
             }
         }
+        // if there is no condition for the query, then scanCols=[] 
+        if(Arrays.toString(scanColumns).equals("[]"))
+        	scanCols = new int[0];
 
         short[] targets = new short[targetColumns.length];
         for (int i = 0; i < targetColumns.length; i++)
