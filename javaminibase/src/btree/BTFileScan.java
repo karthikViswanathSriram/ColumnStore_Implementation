@@ -55,13 +55,13 @@ public class BTFileScan extends IndexFileScan
             if (leafPage == null)
             {
             	
-            	System.out.println("leaf page is null for btscan.java");
+            	//System.out.println("leaf page is null for btscan.java");
                 return null;
 
             }
             if ((deletedcurrent && didfirst) || (!deletedcurrent && !didfirst)) {
             	      	
-            	System.out.println("deleting first node...");
+            	//System.out.println("deleting first node...");
                 didfirst = true;
                 deletedcurrent = false;
                 entry = leafPage.getCurrent(curRid);
@@ -69,7 +69,7 @@ public class BTFileScan extends IndexFileScan
                 
                if (BT.keyCompare(entry.key, endkey) > 0) {
                 	
-                	System.out.println("everything deleetd finanly");
+                	//System.out.println("everything deleetd finanly");
                 	IndexUtils.all_deleted=true;
                 }
                 
@@ -93,7 +93,7 @@ public class BTFileScan extends IndexFileScan
             if (endkey != null)
                 if (BT.keyCompare(entry.key, endkey) > 0) {
                 	
-                	System.out.println("went past right end of scan");
+                	//System.out.println("went past right end of scan");
                 	
                 	//findRunStart(entry.key, entry.key);
                     // went past right end of scan

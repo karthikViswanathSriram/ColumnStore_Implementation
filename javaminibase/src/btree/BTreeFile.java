@@ -1716,13 +1716,8 @@ public class BTreeFile extends IndexFile
 
         //this sets up scan at the starting position, ready for iteration
         
-        System.out.println("setting up leaf page");
+        //System.out.println("setting up leaf page");
         scan.leafPage = findRunStart(lo_key, scan.curRid);
-        if(scan.leafPage==null)
-        {
-        	System.out.println("nothing to delete finally everything got deleted!!\n");
-        	IndexUtils.all_deleted=true;
-        }
         
         return scan;
     }
