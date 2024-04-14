@@ -184,7 +184,7 @@ public class DelQuery {
 					tupleCount++;
 				}
 				
-				System.out.println("closing...");
+				//System.out.println("closing...");
 
 				cis.close();
 

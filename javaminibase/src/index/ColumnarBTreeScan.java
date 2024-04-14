@@ -106,7 +106,7 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst{
         if (nextentry == null)
         {
         	
-        	System.out.println("half records got delted hence returning null");
+        	//System.out.println("half records got delted hence returning null");
             return -1;
 
         }
