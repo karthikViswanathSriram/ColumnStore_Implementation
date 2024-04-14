@@ -10,6 +10,7 @@ import global.GlobalConst;
 import global.PageId;
 import global.RID;
 import global.SystemDefs;
+import index.IndexUtils;
 
 import java.io.IOException;
 
@@ -52,12 +53,26 @@ public class BTFileScan extends IndexFileScan
         PageId nextpage;
         try {
             if (leafPage == null)
+            {
+            	
+            	System.out.println("leaf page is null for btscan.java");
                 return null;
 
+            }
             if ((deletedcurrent && didfirst) || (!deletedcurrent && !didfirst)) {
+            	      	
+            	System.out.println("deleting first node...");
                 didfirst = true;
                 deletedcurrent = false;
                 entry = leafPage.getCurrent(curRid);
+                
+                
+               if (BT.keyCompare(entry.key, endkey) > 0) {
+                	
+                	System.out.println("everything deleetd finanly");
+                	IndexUtils.all_deleted=true;
+                }
+                
             } else {
                 entry = leafPage.getNext(curRid);
             }
@@ -77,6 +92,10 @@ public class BTFileScan extends IndexFileScan
 
             if (endkey != null)
                 if (BT.keyCompare(entry.key, endkey) > 0) {
+                	
+                	System.out.println("went past right end of scan");
+                	
+                	//findRunStart(entry.key, entry.key);
                     // went past right end of scan
                     SystemDefs.JavabaseBM.unpinPage(leafPage.getCurPage(), false);
                     leafPage = null;

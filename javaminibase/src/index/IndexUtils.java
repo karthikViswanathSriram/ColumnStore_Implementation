@@ -30,6 +30,9 @@ public class IndexUtils {
      * @throws IteratorException         iterator exception
      * @throws ConstructPageException    failed to construct a header page
      */
+	
+	public static boolean all_deleted=false;
+	
     public static IndexFileScan BTree_scan(CondExpr[] selects, IndexFile indFile)
             throws IOException,
             UnknownKeyTypeException,

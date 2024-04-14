@@ -7,6 +7,7 @@ import global.AttrType;
 import global.IndexType;
 import global.SystemDefs;
 import heap.Tuple;
+import index.IndexUtils;
 import iterator.*;
 
 public class DelQuery {
@@ -49,6 +50,8 @@ public class DelQuery {
         {
             temp[0] = valueConstraints.substring(0,1);
         }
+        
+        IndexUtils.all_deleted=false;
 
         runDelQuery(columnarFile, outputColumns, valueConstraints, temp, scanTypes, temp2, targetColumns, purge);
 
@@ -61,6 +64,8 @@ public class DelQuery {
 
     private static void runDelQuery(String columnarFile, String[] outputColumns, String otherConstraints, String[] scanColumns, String[] scanTypes, String[] scanConstraints, String[] targetColumns, String purge) throws Exception {
 
+    	
+    	
         Columnarfile cf = new Columnarfile(columnarFile);
 
         AttrType[] opAttr = new AttrType[outputColumns.length];
@@ -155,25 +160,37 @@ public class DelQuery {
                 cis.close();
 
             }
-            else if(scanTypes[0].equals("BTREE"))
-            {
-                IndexType[] indexType = new IndexType[scanTypes.length];
-                indexType[0] = new IndexType(IndexType.B_Index);
-                ColumnarIndexScan cis;
-                cis = new ColumnarIndexScan(columnarFile, scanCols, indexType, scanConstraint, otherConstraint, false, targets, outputColumnsList, 0);
-                Boolean deleted = true;
-                while (deleted) 
-                {
-                    deleted = cis.delete_next(indexType);
+			else if (scanTypes[0].equals("BTREE")) {
+				IndexType[] indexType = new IndexType[scanTypes.length];
+				indexType[0] = new IndexType(IndexType.B_Index);
+				ColumnarIndexScan cis;
 
-                    if (deleted == false) {
-                        break;
-                    }
-                    tupleCount++;
-                }
+				while (!IndexUtils.all_deleted) {
 
-                cis.close();
-            } 
+				cis = new ColumnarIndexScan(columnarFile, scanCols, indexType, scanConstraint, otherConstraint, false,
+						targets, outputColumnsList, 0);
+				// it = new ColumnarIndexScan(columnarFile, scanCols, indexType, scanConstraint,
+				// valueConstraint, false, targets, outputColumnsList, 0);
+
+				Boolean deleted = true;
+				while (deleted) {
+					deleted = cis.delete_next(indexType);
+
+					if (deleted == false) {
+
+						System.out.println(tupleCount);
+						break;
+					}
+					tupleCount++;
+				}
+				
+				System.out.println("closing...");
+
+				cis.close();
+
+				 }
+
+			}
             else
             {
                 throw new Exception("Scan type (" + scanTypes[0] + ") doesn't exist");

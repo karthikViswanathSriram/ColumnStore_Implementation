@@ -87,8 +87,11 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst{
         }
 
         if (position < 0)
-            return false;
+        {
+        	System.out.println("position is less than 0  line");
+        	return false;
 
+        }
         return cf.markTupleDeleted(position);
     }
 
@@ -101,8 +104,12 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst{
         }
 
         if (nextentry == null)
+        {
+        	
+        	System.out.println("half records got delted hence returning null");
             return -1;
 
+        }
         try {
             int position = ((LeafData) nextentry.data).getData();
             return position;

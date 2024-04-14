@@ -174,7 +174,7 @@ public class HelperFunctions {
 
     public static String dbPath(String columnDB){
         // Hardcoding the path
-        String path = "dbs/CSE510_DBMSI_GROUP4_";
+        String path = "C:\\Users\\91966\\OneDrive\\Desktop\\DBMSI\\CSE510-JavaMiniBase\\javaminibase\\src\\dbs\\CSE510_DBMSI_GROUP4_";
         return path + columnDB + ".minibaseDB";
     }
 

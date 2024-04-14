@@ -14,6 +14,7 @@ import bufmgr.ReplacerException;
 import diskmgr.Page;
 import global.*;
 import heap.HFPage;
+import index.IndexUtils;
 
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
@@ -1714,7 +1715,15 @@ public class BTreeFile extends IndexFile
         scan.bfile = this;
 
         //this sets up scan at the starting position, ready for iteration
+        
+        System.out.println("setting up leaf page");
         scan.leafPage = findRunStart(lo_key, scan.curRid);
+        if(scan.leafPage==null)
+        {
+        	System.out.println("nothing to delete finally everything got deleted!!\n");
+        	IndexUtils.all_deleted=true;
+        }
+        
         return scan;
     }
 

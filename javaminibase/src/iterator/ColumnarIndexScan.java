@@ -71,7 +71,7 @@ public class ColumnarIndexScan extends Iterator{
         Jtuple = ColumnarScanUtils.getProjectionTuple(columnarfile, perm_mat, targetedCols);
 
         // if there is no condition for the query, get the first available index from the hashmap and call ColumnarBtreeScan object
-        if(columnNos.length==0) {
+        if(columnNos.length==0 ) {
             Map.Entry<String,BTreeFile> entry = columnarfile.getBtreeHash().entrySet().iterator().next();
             String key = entry.getKey();
             BTreeFile value = entry.getValue();
