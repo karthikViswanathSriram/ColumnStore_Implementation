@@ -115,6 +115,7 @@ public class ColumnarIndexScan extends Iterator{
     @Override
     public Tuple get_next() throws Exception {
         int position = 0;
+        int strcount = 0;
         Tuple t;
         while (position != -1) {
             try {
@@ -137,7 +138,8 @@ public class ColumnarIndexScan extends Iterator{
                             break;
                         case AttrType.attrString:
                             tTuple.setStrFld(i + 1,
-                                    Convert.getStrValue(0, record.getTupleByteArray(), targetShortSizes[i] + 2));
+                                    Convert.getStrValue(0, record.getTupleByteArray(), targetShortSizes[strcount] + 2));
+                            strcount+=1;
                             break;
                         default:
                             throw new Exception("Attribute indexAttrType not supported");
