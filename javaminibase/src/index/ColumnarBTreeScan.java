@@ -88,7 +88,7 @@ public class ColumnarBTreeScan extends Iterator implements GlobalConst{
 
         if (position < 0)
         {
-        	System.out.println("position is less than 0  line");
+        	//System.out.println("position is less than 0  line");
         	return false;
 
         }
