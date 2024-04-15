@@ -178,7 +178,7 @@ public class DelQuery {
 
 					if (deleted == false) {
 
-						System.out.println(tupleCount);
+						// System.out.println(tupleCount);
 						break;
 					}
 					tupleCount++;

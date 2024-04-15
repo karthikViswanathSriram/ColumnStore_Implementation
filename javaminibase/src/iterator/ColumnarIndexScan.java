@@ -71,7 +71,8 @@ public class ColumnarIndexScan extends Iterator{
         Jtuple = ColumnarScanUtils.getProjectionTuple(columnarfile, perm_mat, targetedCols);
 
         // if there is no condition for the query, get the first available index from the hashmap and call ColumnarBtreeScan object
-        if(columnNos.length==0 ) {
+        if(columnNos.length==0 && indexTypes[0].indexType == IndexType.B_Index) {
+            System.out.print("Entered btree");
             Map.Entry<String,BTreeFile> entry = columnarfile.getBtreeHash().entrySet().iterator().next();
             String key = entry.getKey();
             BTreeFile value = entry.getValue();
@@ -130,6 +131,10 @@ public class ColumnarIndexScan extends Iterator{
                 tTuple.setHdr((short) givenTargetedCols.length, targetAttrTypes, targetShortSizes);
                 for (int i = 0; i < targetHeapFiles.length; i++) {
                     Tuple record = targetHeapFiles[i].getRecord(position);
+                    if (record == null) {
+                    	tTuple = null;
+                    	break;
+                    }
                     switch (targetAttrTypes[i].attrType) {
                         case AttrType.attrInteger:
                             // Assumed that col heap page will have only one entry
@@ -145,7 +150,8 @@ public class ColumnarIndexScan extends Iterator{
                             throw new Exception("Attribute indexAttrType not supported");
                     }
                 }
-                if (PredEval.Eval(_selects, tTuple, null, targetAttrTypes, null)) {
+                
+                if (tTuple != null && PredEval.Eval(_selects, tTuple, null, targetAttrTypes, null)) {
                     Projection.Project(tTuple, targetAttrTypes, Jtuple, perm_mat, perm_mat.length);
                     return Jtuple;
                 }
